@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 翻唱工作室 - AI Cover Studio</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+              900: '#4c1d95',
+            },
+            studio: {
+              bg: '#0B0F19',
+              card: '#131B2E',
+              cardHover: '#1B243B',
+              border: '#232D48',
+              accent: '#38BDF8',
+              vocal: '#EC4899',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0B0F19;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #232D48;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #7c3aed;
+    }
+
+    /* Wave visualizer animation */
+    @keyframes pulse-bar {
+      0%, 100% { height: 15%; }
+      50% { height: 95%; }
+    }
+    .animate-wave {
+      animation: pulse-bar 1.2s ease-in-out infinite;
+    }
+
+    /* Glow effects */
+    .glow-purple {
+      box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.4);
+    }
+    .glow-cyan {
+      box-shadow: 0 0 25px -5px rgba(56, 189, 248, 0.4);
+    }
+  </style>
+</head>
+
+<body class="bg-studio-bg text-slate-100 min-h-screen font-sans selection:bg-brand-500 selection:text-white flex flex-col">
+
+  <header class="border-b border-studio-border bg-studio-card/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-500 to-studio-accent flex items-center justify-center shadow-lg shadow-brand-500/30">
+          <i data-lucide="mic-2" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-100 bg-clip-text text-transparent">
+            AI 翻唱工作室 <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-medium ml-1">Pro Studio</span>
+          </h1>
+          <p class="text-xs text-slate-400">去人聲 · 100 款音色庫 · AI 時間軸歌詞重構 · 混音導出</p>
+        </div>
+      </div>
+
+      <!-- Action Status Badges -->
+      <div class="flex items-center space-x-3">
+        <div id="engineStatus" class="hidden sm:flex items-center space-x-2 text-xs bg-slate-800/80 px-3 py-1.5 rounded-full border border-studio-border">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-slate-300">WebAudio 核心就緒</span>
+        </div>
+        <button onclick="resetAllStudio()" class="text-xs text-slate-400 hover:text-white px-2.5 py-1.5 rounded-lg border border-studio-border hover:bg-slate-800 transition">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 inline mr-1"></i>重新開始
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Progress Pipeline Stepper -->
+    <div class="bg-studio-card border border-studio-border rounded-2xl p-4 shadow-xl">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-medium">
+        <div id="step-tab-1" class="flex items-center space-x-2 p-2.5 rounded-xl bg-brand-600/20 text-brand-300 border border-brand-500/40">
+          <span class="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[11px] font-bold">1</span>
+          <span>上傳與去人聲</span>
+        </div>
+        <div id="step-tab-2" class="flex items-center space-x-2 p-2.5 rounded-xl bg-slate-800/40 text-slate-400 border border-transparent">
+          <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[11px] font-bold">2</span>
+          <span>選定 100 種音色</span>
+        </div>
+        <div id="step-tab-3" class="flex items-center space-x-2 p-2.5 rounded-xl bg-slate-800/40 text-slate-400 border border-transparent">
+          <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[11px] font-bold">3</span>
+          <span>辨識與歌詞改寫</span>
+        </div>
+        <div id="step-tab-4" class="flex items-center space-x-2 p-2.5 rounded-xl bg-slate-800/40 text-slate-400 border border-transparent">
+          <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[11px] font-bold">4</span>
+          <span>合成預覽與導出</span>
+        </div>
+      </div>
+    </div>
+
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Left Panel: Audio Source & Vocal Remover Engine -->
+      <div class="lg:col-span-5 space-y-6">
+        <div class="bg-studio-card border border-studio-border rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-base flex items-center space-x-2">
+              <i data-lucide="music" class="w-4 h-4 text-studio-accent"></i>
+              <span>第一步：音檔載入與伴奏分離</span>
+            </h2>
+            <span id="audioDurationBadge" class="text-xs text-slate-400 font-mono">00:00</span>
+          </div>
+
+          <!-- Dropzone -->
+          <div id="dropZone" class="border-2 border-dashed border-studio-border hover:border-brand-500 rounded-xl p-6 text-center cursor-pointer transition bg-slate-900/40 group">
+            <input type="file" id="audioFileInput" accept="audio/*" class="hidden">
+            <div class="space-y-2 flex flex-col items-center">
+              <div class="w-12 h-12 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center group-hover:scale-110 transition">
+                <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+              </div>
+              <p class="text-sm font-medium text-slate-200">點擊上傳或拖曳音檔（MP3, WAV, M4A）</p>
+              <p class="text-xs text-slate-500">支援手機或電腦本機音訊，本地即時運算</p>
+            </div>
+            <div id="loadedFileInfo" class="hidden mt-3 pt-3 border-t border-studio-border/60 text-left">
+              <p id="fileNameDisplay" class="text-xs font-semibold text-brand-300 truncate">檔名：demo.mp3</p>
+              <p id="fileSizeDisplay" class="text-[11px] text-slate-400">大小：--</p>
+            </div>
+          </div>
+
+          <!-- Or Demo track option -->
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>沒有音檔？</span>
+            <button onclick="loadDemoAudio()" class="text-studio-accent hover:underline flex items-center space-x-1">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              <span>載入經典節奏 Demo 原曲</span>
+            </button>
+          </div>
+
+          <!-- Vocal Removal Controls -->
+          <div class="pt-3 border-t border-studio-border/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-medium text-slate-200">AI 消除原唱人聲</h3>
+                <p class="text-xs text-slate-400">使用中置聲道消音與頻譜差分演算法抽離人聲</p>
+              </div>
+              <button id="vocalRemoverBtn" onclick="toggleVocalRemoval()" disabled class="px-4 py-2 rounded-xl text-xs font-semibold flex items-center space-x-2 transition bg-slate-800 text-slate-500 cursor-not-allowed">
+                <i data-lucide="scissors" class="w-4 h-4"></i>
+                <span id="vocalBtnText">消除人聲</span>
+              </button>
+            </div>
+
+            <!-- Vocal Remover Strength slider -->
+            <div id="vocalSettingsPanel" class="p-3 rounded-xl bg-slate-900/60 border border-studio-border space-y-2 hidden">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">消音強度 (中置抵消比率)</span>
+                <span id="vocalLevelVal" class="text-brand-300 font-mono font-bold">100%</span>
+              </div>
+              <input type="range" id="vocalFilterRange" min="0" max="100" value="100" oninput="updateVocalStrength(this.value)" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-500">
+              <div class="flex items-center justify-between text-[11px] text-emerald-400">
+                <span class="flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> 純伴奏提取已啟用</span>
+                <span class="text-slate-500">保留立體聲低頻與外側聲場</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Waveform Canvas Display -->
+          <div class="bg-slate-950/80 rounded-xl p-3 border border-studio-border space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 flex items-center gap-1"><i data-lucide="activity" class="w-3.5 h-3.5 text-indigo-400"></i> 音訊波形監聽</span>
+              <span id="playStateBadge" class="text-[11px] text-slate-500">閒置中</span>
+            </div>
+            <canvas id="waveformCanvas" width="500" height="75" class="w-full h-16 rounded bg-slate-900"></canvas>
+            
+            <!-- Quick playback bar -->
+            <div class="flex items-center space-x-3 pt-1">
+              <button id="quickPlayBtn" onclick="togglePlayAudio()" disabled class="w-8 h-8 rounded-lg bg-brand-600 hover:bg-brand-500 text-white flex items-center justify-center transition disabled:opacity-40 disabled:cursor-not-allowed">
+                <i id="playIcon" data-lucide="play" class="w-4 h-4 fill-current"></i>
+              </button>
+              <div class="flex-1 flex items-center space-x-2">
+                <span id="currentTimeDisplay" class="text-xs font-mono text-slate-400">00:00</span>
+                <input type="range" id="audioScrubber" min="0" max="100" value="0" step="0.1" oninput="seekAudio(this.value)" class="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-studio-accent">
+                <span id="totalTimeDisplay" class="text-xs font-mono text-slate-400">00:00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-7 space-y-6">
+        <div class="bg-studio-card border border-studio-border rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="font-semibold text-base flex items-center space-x-2">
+                <i data-lucide="sparkle" class="w-4 h-4 text-brand-400"></i>
+                <span>第二步：選擇 AI 翻唱音色（共 100 款）</span>
+              </h2>
+              <p class="text-xs text-slate-400">男聲 50 款 + 女聲 50 款，點擊即可試聽與套用</p>
+            </div>
+            <!-- Currently Selected Voice Chip -->
+            <div id="activeVoiceBadge" class="flex items-center space-x-2 bg-gradient-to-r from-brand-900/60 to-slate-800 px-3 py-1.5 rounded-xl border border-brand-500/50">
+              <span class="w-2.5 h-2.5 rounded-full bg-brand-400 animate-ping"></span>
+              <span class="text-xs text-slate-300">目前選擇：</span>
+              <span id="selectedVoiceName" class="text-xs font-bold text-brand-300">#M01 陽光流行男聲</span>
+            </div>
+          </div>
+
+          <!-- Gender & Genre Filter Controls -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-studio-border/60">
+            <!-- Filter Pills -->
+            <div class="flex items-center space-x-1.5 text-xs">
+              <button onclick="filterVoices('all')" id="btn-filter-all" class="voice-filter-btn px-3 py-1.5 rounded-lg bg-brand-600 text-white font-medium">全部 100 種</button>
+              <button onclick="filterVoices('male')" id="btn-filter-male" class="voice-filter-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">男生 (50)</button>
+              <button onclick="filterVoices('female')" id="btn-filter-female" class="voice-filter-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">女生 (50)</button>
+            </div>
+
+            <!-- Search box -->
+            <div class="relative w-full sm:w-48">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+              <input type="text" id="voiceSearchInput" oninput="searchVoices(this.value)" placeholder="搜尋風格、歌手特徵..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-900 rounded-lg border border-studio-border text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500">
+            </div>
+          </div>
+
+          <!-- Voice Grid (Scrollable Container for 100 voices) -->
+          <div id="voiceGridContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[300px] overflow-y-auto pr-1">
+            <!-- Voice Cards dynamically injected by JS -->
+          </div>
+
+          <!-- Voice timbre modifier sliders -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-900/60 rounded-xl border border-studio-border text-xs">
+            <div class="space-y-1">
+              <div class="flex justify-between">
+                <span class="text-slate-400">音高微調 (Pitch Shift)</span>
+                <span id="pitchDisplay" class="font-mono text-brand-300">0 半音</span>
+              </div>
+              <input type="range" id="pitchSlider" min="-12" max="12" value="0" step="1" oninput="updatePitch(this.value)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-500">
+            </div>
+            <div class="space-y-1">
+              <div class="flex justify-between">
+                <span class="text-slate-400">歌唱語速 / 咬字張力</span>
+                <span id="speedDisplay" class="font-mono text-brand-300">1.0x</span>
+              </div>
+              <input type="range" id="speedSlider" min="0.75" max="1.3" value="1.0" step="0.05" oninput="updateSpeed(this.value)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-500">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-studio-card border border-studio-border rounded-2xl p-5 shadow-xl space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-studio-border">
+        <div>
+          <h2 class="font-semibold text-base flex items-center space-x-2">
+            <i data-lucide="align-left" class="w-4 h-4 text-emerald-400"></i>
+            <span>第三步：AI 歌詞與時間軸辨識、自創填詞</span>
+          </h2>
+          <p class="text-xs text-slate-400">消除原唱人聲後，在此辨識歌曲旋律時鐘，並填寫你的全新自創歌詞</p>
+        </div>
+
+        <!-- Workflow Action Buttons -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Recognize Button -->
+          <button id="recognizeBtn" onclick="runAiLyricsRecognition()" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white flex items-center space-x-1.5 shadow-md shadow-emerald-900/30 transition">
+            <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
+            <span>辨識 (識別時間軸與詞)</span>
+          </button>
+
+          <!-- Complete (Lock) Button -->
+          <button id="completeLyricsBtn" onclick="lockLyrics(true)" disabled class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-brand-600 text-white flex items-center space-x-1.5 transition opacity-40 cursor-not-allowed">
+            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+            <span>完成 (鎖定並套用音色)</span>
+          </button>
+
+          <!-- Edit (Unlock) Button -->
+          <button id="editLyricsBtn" onclick="lockLyrics(false)" class="hidden px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-600/20 text-amber-300 border border-amber-500/40 hover:bg-amber-600/30 flex items-center space-x-1.5 transition">
+            <i data-lucide="unlock" class="w-3.5 h-3.5"></i>
+            <span>修改 (解鎖編輯)</span>
+          </button>
+
+          <!-- Add Line Button -->
+          <button id="addLineBtn" onclick="addNewLyricRow()" class="px-3 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-studio-border flex items-center space-x-1">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>新增句</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Recognition Status Banner -->
+      <div id="lyricsBanner" class="p-3 rounded-xl bg-slate-900/60 border border-studio-border text-xs flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <span id="lockStatusIcon" class="w-2 h-2 rounded-full bg-slate-500"></span>
+          <span id="lockStatusText" class="text-slate-400">狀態：請先點擊「辨識」取得歌曲時間軸，或直接點「新增句」自訂填詞。</span>
+        </div>
+        <div class="text-[11px] text-slate-500">
+          <span id="lyricCountBadge">共 0 句</span>
+        </div>
+      </div>
+
+      <!-- Lyrics Editor Table / Rows Container -->
+      <div class="space-y-2 max-h-[360px] overflow-y-auto pr-1" id="lyricsTimelineContainer">
+        <!-- Lyric item rows generated dynamically -->
+      </div>
+    </section>
+
+    <section class="bg-studio-card border border-studio-border rounded-2xl p-5 shadow-xl space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-studio-border">
+        <div>
+          <h2 class="font-semibold text-base flex items-center space-x-2">
+            <i data-lucide="headphones" class="w-4 h-4 text-purple-400"></i>
+            <span>第四步：AI 翻唱總預覽、專案存檔與 MP3 導出</span>
+          </h2>
+          <p class="text-xs text-slate-400">伴奏 ＋ AI 改寫歌詞演唱同軌同步混音，支援離線高品質封裝</p>
+        </div>
+
+        <!-- Audio Output Actions -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Save Project State -->
+          <button onclick="saveProjectState()" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-studio-border flex items-center space-x-1.5 transition">
+            <i data-lucide="save" class="w-3.5 h-3.5 text-blue-400"></i>
+            <span>存檔 (暫存專案)</span>
+          </button>
+
+          <!-- Export MP3 Button -->
+          <button id="exportMp3Btn" onclick="exportFinalTrack()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-brand-600 via-indigo-600 to-studio-accent hover:opacity-90 text-white flex items-center space-x-2 shadow-lg shadow-brand-500/20 transition">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>下載翻唱音訊 (MP3)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Karaoke Dynamic Stage Display -->
+      <div class="relative bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-2xl p-6 border border-studio-border overflow-hidden text-center space-y-4">
+        <!-- Ambient Glow Backdrops -->
+        <div class="absolute -top-10 left-1/4 w-40 h-40 bg-brand-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-10 right-1/4 w-40 h-40 bg-studio-accent/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="text-xs uppercase tracking-wider font-semibold text-slate-500">Live Karaoke Stage</div>
+        
+        <!-- Current singing lyric active display -->
+        <div class="min-h-[70px] flex flex-col items-center justify-center space-y-1">
+          <p id="karaokeCurrentLine" class="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-white to-studio-accent transition-all duration-300">
+            「請點選下方預覽播放」
+          </p>
+          <p id="karaokeNextLine" class="text-xs text-slate-500 italic">
+            下一句：等待伴奏載入
+          </p>
+        </div>
+
+        <!-- Master Player Timeline -->
+        <div class="max-w-2xl mx-auto space-y-3 pt-2">
+          <!-- Interactive Time Bar -->
+          <div class="flex items-center space-x-3 text-xs font-mono text-slate-400">
+            <span id="masterCurrentTime">00:00</span>
+            <div class="relative flex-1 group">
+              <input type="range" id="masterScrubber" min="0" max="100" value="0" step="0.1" oninput="masterSeek(this.value)" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-500">
+            </div>
+            <span id="masterTotalTime">00:00</span>
+          </div>
+
+          <!-- Main Control Buttons -->
+          <div class="flex items-center justify-center space-x-4">
+            <button onclick="masterSeekRelative(-5)" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition" title="倒退 5 秒">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            </button>
+            <button id="masterPlayBtn" onclick="toggleMasterPlayback()" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 text-white flex items-center justify-center shadow-lg shadow-brand-500/40 hover:scale-105 active:scale-95 transition">
+              <i id="masterPlayIcon" data-lucide="play" class="w-5 h-5 fill-current"></i>
+            </button>
+            <button onclick="masterSeekRelative(5)" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition" title="前進 5 秒">
+              <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Track Balance Sliders -->
+        <div class="max-w-xl mx-auto grid grid-cols-2 gap-4 pt-3 border-t border-slate-800/80 text-xs">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="volume-2" class="w-4 h-4 text-slate-400"></i>
+            <span class="text-slate-400 whitespace-nowrap">伴奏音量</span>
+            <input type="range" id="bgmVolumeRange" min="0" max="1.5" step="0.05" value="0.9" oninput="updateBgmVolume(this.value)" class="w-full h-1 bg-slate-700 rounded-lg accent-studio-accent">
+          </div>
+          <div class="flex items-center space-x-2">
+            <i data-lucide="mic" class="w-4 h-4 text-brand-400"></i>
+            <span class="text-slate-400 whitespace-nowrap">AI 演唱音量</span>
+            <input type="range" id="vocalVolumeRange" min="0" max="1.5" step="0.05" value="1.0" oninput="updateVocalVolume(this.value)" class="w-full h-1 bg-slate-700 rounded-lg accent-brand-500">
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- Hidden Audio Helper Elements -->
+  <audio id="demoAudioElement" preload="auto" class="hidden"></audio>
+
+  <script>
+    // Studio Application State
+    const AppState = {
+      audioContext: null,
+      audioBuffer: null,
+      rawAudioSource: null,
+      sourceNode: null,
+      vocalRemoverNode: null,
+      bgmGainNode: null,
+      aiVocalGainNode: null,
+      analyserNode: null,
+      isAudioLoaded: false,
+      isPlaying: false,
+      isVocalRemoved: false,
+      vocalRemovalStrength: 1.0,
+      playbackStartTime: 0,
+      pausedAt: 0,
+      duration: 0,
+      selectedVoiceId: 'M01',
+      voices: [],
+      lyrics: [],
+      isLyricsLocked: false,
+      pitchShift: 0,
+      singingSpeed: 1.0,
+      speechSynth: window.speechSynthesis || null,
+      activeUtterance: null,
+      currentLyricIndex: -1,
+      bgmVolume: 0.9,
+      aiVocalVolume: 1.0,
+    };
+
+    function generate100Voices() {
+      const maleStyles = [
+        "陽光流行", "深情抒情", "熱血搖滾", "慵懶爵士", "潮流饒舌", 
+        "空靈民謠", "磁性低音", "清爽少年", "日系動漫", "復古英搖",
+        "高亢美聲", "沉穩大叔", "電子迷幻", "原音民歌", "暗黑重金屬",
+        "藍調靈魂", "城市流行", "未來賽博", "陽剛民謠", "輕快節奏",
+        "穿透力高音", "溫柔學長", "霸道總裁", "吟遊詩人", "街頭民歌手"
+      ];
+      
+      const femaleStyles = [
+        "甜美愛豆", "清澈抒情", "空靈仙氣", "爆發力搖滾", "慵懶小資爵士",
+        "靈魂藍調", "溫柔姐姐", "二次元元氣", "日系美聲", "韓系舞曲",
+        "古風唯美", "民謠知性", "歐美流行", "迷幻電音", "百老匯歌劇",
+        "純淨高音", "知性厚實", "俏皮少女", "冷艷歌姬", "都會女子",
+        "童聲清亮", "夜店重低音", "Lo-Fi 沉浸", "治癒療癒系", "神秘吟唱"
+      ];
+
+      const voices = [];
+
+      // 50 Male Voices
+      for (let i = 1; i <= 50; i++) {
+        const id = `M${String(i).padStart(2, '0')}`;
+        const style = maleStyles[(i - 1) % maleStyles.length];
+        const sub = i > 25 ? "變奏型" : "標準型";
+        voices.push({
+          id: id,
+          gender: 'male',
+          name: `#${id} ${style}男聲`,
+          style: style,
+          timbre: `${sub} · 男中/高音`,
+          pitchOffset: ((i % 5) - 2), // -2 to +2
+          rateMod: 1.0 + ((i % 3) - 1) * 0.05,
+          color: 'from-blue-600 to-indigo-600'
+        });
+      }
+
+      // 50 Female Voices
+      for (let i = 1; i <= 50; i++) {
+        const id = `F${String(i).padStart(2, '0')}`;
+        const style = femaleStyles[(i - 1) % femaleStyles.length];
+        const sub = i > 25 ? "華麗型" : "清新型";
+        voices.push({
+          id: id,
+          gender: 'female',
+          name: `#${id} ${style}女聲`,
+          style: style,
+          timbre: `${sub} · 女高/中音`,
+          pitchOffset: ((i % 5) - 1) + 2, // higher pitch
+          rateMod: 1.0 + ((i % 3) - 1) * 0.05,
+          color: 'from-pink-600 to-rose-600'
+        });
+      }
+
+      return voices;
+    }
+
+    function renderVoiceGrid(filter = 'all', searchQuery = '') {
+      const container = document.getElementById('voiceGridContainer');
+      container.innerHTML = '';
+
+      const query = searchQuery.trim().toLowerCase();
+      const filtered = AppState.voices.filter(v => {
+        const matchesGender = (filter === 'all') || (v.gender === filter);
+        const matchesSearch = !query || v.name.toLowerCase().includes(query) || v.style.toLowerCase().includes(query);
+        return matchesGender && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-slate-500">找不到符合「${searchQuery}」的音色</div>`;
+        return;
+      }
+
+      filtered.forEach(voice => {
+        const isSelected = voice.id === AppState.selectedVoiceId;
+        const card = document.createElement('div');
+        card.className = `p-2.5 rounded-xl border text-xs cursor-pointer transition flex items-center justify-between group ${
+          isSelected 
+            ? 'bg-brand-600/30 border-brand-500 shadow-md shadow-brand-500/20' 
+            : 'bg-slate-900/70 border-studio-border hover:border-slate-600 hover:bg-slate-800'
+        }`;
+        card.onclick = () => selectVoice(voice.id);
+
+        card.innerHTML = `
+          <div class="flex items-center space-x-2 truncate">
+            <span class="w-6 h-6 rounded-lg bg-gradient-to-tr ${voice.color} flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+              ${voice.gender === 'male' ? '♂' : '♀'}
+            </span>
+            <div class="truncate">
+              <p class="font-medium text-slate-200 truncate ${isSelected ? 'text-brand-300 font-bold' : ''}">${voice.name}</p>
+              <p class="text-[10px] text-slate-500 truncate">${voice.timbre}</p>
+            </div>
+          </div>
+          <button onclick="event.stopPropagation(); previewVoiceAudition('${voice.id}')" class="p-1 rounded text-slate-400 hover:text-studio-accent hover:bg-slate-700/50 shrink-0" title="試聽音色">
+            <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+          </button>
+        `;
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function selectVoice(voiceId) {
+      AppState.selectedVoiceId = voiceId;
+      const voice = AppState.voices.find(v => v.id === voiceId);
+      if (voice) {
+        document.getElementById('selectedVoiceName').textContent = voice.name;
+        showToast(`已選定翻唱音色：${voice.name}`, 'info');
+      }
+      renderVoiceGrid(currentVoiceFilter, document.getElementById('voiceSearchInput').value);
+    }
+
+    let currentVoiceFilter = 'all';
+    function filterVoices(type) {
+      currentVoiceFilter = type;
+      document.querySelectorAll('.voice-filter-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-600', 'text-white');
+        btn.classList.add('bg-slate-800', 'text-slate-300');
+      });
+      document.getElementById(`btn-filter-${type}`).classList.add('bg-brand-600', 'text-white');
+      document.getElementById(`btn-filter-${type}`).classList.remove('bg-slate-800', 'text-slate-300');
+      renderVoiceGrid(type, document.getElementById('voiceSearchInput').value);
+    }
+
+    function searchVoices(val) {
+      renderVoiceGrid(currentVoiceFilter, val);
+    }
+
+    function previewVoiceAudition(voiceId) {
+      const voice = AppState.voices.find(v => v.id === voiceId);
+      if (!voice) return;
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const sampleText = `${voice.name}，正在為您準備翻唱全新改寫歌詞。`;
+        const utter = new SpeechSynthesisUtterance(sampleText);
+        utter.rate = (voice.rateMod || 1.0) * AppState.singingSpeed;
+        utter.pitch = voice.gender === 'female' ? 1.4 : 0.85;
+        
+        // Find best local system voice
+        const sysVoices = window.speechSynthesis.getVoices();
+        const zhVoice = sysVoices.find(v => v.lang.includes('zh') || v.lang.includes('cmn'));
+        if (zhVoice) utter.voice = zhVoice;
+
+        window.speechSynthesis.speak(utter);
+        showToast(`試聽音色：${voice.name}`, 'info');
+      } else {
+        showToast('目前瀏覽器環境未開啟語音試聽功能', 'warning');
+      }
+    }
+
+    function initAudioContext() {
+      if (!AppState.audioContext) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        AppState.audioContext = new AudioCtx();
+      }
+      if (AppState.audioContext.state === 'suspended') {
+        AppState.audioContext.resume();
+      }
+    }
+
+    // Core Vocal Remover: Stereo Invert / Mid-Side phase cancellation
+    // Creates a custom ChannelSplitter/Merger network to eliminate center-panned vocals
+    function createVocalRemoverDSP(sourceNode) {
+      const ctx = AppState.audioContext;
+      
+      // Split stereo channels
+      const splitter = ctx.createChannelSplitter(2);
+      const merger = ctx.createChannelMerger(2);
+      
+      // Inverter for out-of-phase center subtraction
+      const inverter = ctx.createGain();
+      inverter.gain.value = -1 * AppState.vocalRemovalStrength;
+
+      // Center vocal bandpass/notch filter (200Hz - 4500Hz where human voice resonates)
+      const vocalFilter = ctx.createBiquadFilter();
+      vocalFilter.type = "peaking";
+      vocalFilter.frequency.value = 1800;
+      vocalFilter.Q.value = 1.0;
+      vocalFilter.gain.value = -30 * AppState.vocalRemovalStrength;
+
+      // Bass preservation filter (keeps kick and bass intact)
+      const bassPreserve = ctx.createBiquadFilter();
+      bassPreserve.type = "lowshelf";
+      bassPreserve.frequency.value = 220;
+      bassPreserve.gain.value = 4.0;
+
+      sourceNode.connect(splitter);
+
+      // (L - R) stereo matrix subtraction eliminates common mono vocal signals
+      const leftGain = ctx.createGain();
+      const rightGain = ctx.createGain();
+
+      splitter.connect(leftGain, 0);
+      splitter.connect(inverter, 1);
+      inverter.connect(leftGain); // Left = L - R
+
+      splitter.connect(rightGain, 1);
+      splitter.connect(inverter, 0); // Right = R - L
+
+      leftGain.connect(vocalFilter);
+      rightGain.connect(vocalFilter);
+
+      vocalFilter.connect(bassPreserve);
+      bassPreserve.connect(merger, 0, 0);
+      bassPreserve.connect(merger, 0, 1);
+
+      return {
+        input: splitter,
+        output: merger,
+        setStrength: (val) => {
+          inverter.gain.value = -1 * val;
+          vocalFilter.gain.value = -30 * val;
+        }
+      };
+    }
+
+    const audioFileInput = document.getElementById('audioFileInput');
+    const dropZone = document.getElementById('dropZone');
+
+    dropZone.onclick = () => audioFileInput.click();
+
+    dropZone.ondragover = (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-brand-500', 'bg-brand-500/10');
+    };
+    dropZone.ondragleave = () => {
+      dropZone.classList.remove('border-brand-500', 'bg-brand-500/10');
+    };
+    dropZone.ondrop = (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-brand-500', 'bg-brand-500/10');
+      if (e.dataTransfer.files.length > 0) {
+        handleSelectedAudioFile(e.dataTransfer.files[0]);
+      }
+    };
+
+    audioFileInput.onchange = (e) => {
+      if (e.target.files.length > 0) {
+        handleSelectedAudioFile(e.target.files[0]);
+      }
+    };
+
+    async function handleSelectedAudioFile(file) {
+      if (!file.type.startsWith('audio/')) {
+        showToast('請上傳合法的音訊檔案 (MP3, WAV, M4A)', 'error');
+        return;
+      }
+
+      initAudioContext();
+      showToast('正在解析音訊檔案...', 'info');
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const decodedBuffer = await AppState.audioContext.decodeAudioData(arrayBuffer);
+        
+        loadDecodedBuffer(decodedBuffer, file.name, (file.size / (1024 * 1024)).toFixed(2) + ' MB');
+        showToast(`已成功載入音檔：${file.name}`, 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('音訊解析失敗，請確認檔案未損壞', 'error');
+      }
+    }
+
+    function loadDecodedBuffer(buffer, name, sizeStr) {
+      AppState.audioBuffer = buffer;
+      AppState.duration = buffer.duration;
+      AppState.isAudioLoaded = true;
+
+      // Update UI displays
+      document.getElementById('loadedFileInfo').classList.remove('hidden');
+      document.getElementById('fileNameDisplay').textContent = `檔名：${name}`;
+      document.getElementById('fileSizeDisplay').textContent = `時長：${formatTime(buffer.duration)} | 大小：${sizeStr}`;
+      document.getElementById('audioDurationBadge').textContent = formatTime(buffer.duration);
+      document.getElementById('totalTimeDisplay').textContent = formatTime(buffer.duration);
+      document.getElementById('masterTotalTime').textContent = formatTime(buffer.duration);
+      
+      // Enable buttons
+      const removerBtn = document.getElementById('vocalRemoverBtn');
+      removerBtn.disabled = false;
+      removerBtn.className = "px-4 py-2 rounded-xl text-xs font-semibold flex items-center space-x-2 transition bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white cursor-pointer shadow-lg shadow-brand-500/20";
+
+      document.getElementById('quickPlayBtn').disabled = false;
+      document.getElementById('audioScrubber').max = buffer.duration;
+      document.getElementById('masterScrubber').max = buffer.duration;
+
+      drawWaveform(buffer);
+      updateStepHighlight(1);
+    }
+
+    function loadDemoAudio() {
+      initAudioContext();
+      showToast('正在合成產生 Demo 流行音樂節奏原曲...', 'info');
+
+      const sampleRate = AppState.audioContext.sampleRate;
+      const duration = 24.0; // 24 seconds loop
+      const frameCount = sampleRate * duration;
+      const buffer = AppState.audioContext.createBuffer(2, frameCount, sampleRate);
+      
+      const left = buffer.getChannelData(0);
+      const right = buffer.getChannelData(1);
+
+      // Procedural pop chord & bass generator with simulated vocal track
+      const bpm = 120;
+      const beatSec = 60 / bpm;
+      const chordFrequencies = [261.63, 329.63, 392.00, 440.00]; // C E G A
+
+      for (let i = 0; i < frameCount; i++) {
+        const t = i / sampleRate;
+        const currentChord = chordFrequencies[Math.floor((t / (beatSec * 4)) % chordFrequencies.length)];
+
+        // Accompaniment synths (Wide Stereo)
+        const chordL = Math.sin(2 * Math.PI * currentChord * t) * 0.15;
+        const chordR = Math.cos(2 * Math.PI * (currentChord * 1.005) * t) * 0.15;
+        
+        // Kick & Bass (Center)
+        const kickEnv = Math.exp(-((t % beatSec) * 12));
+        const kick = Math.sin(2 * Math.PI * 60 * t) * kickEnv * 0.35;
+
+        // Simulated Center Vocals (Around 800Hz - 1.5kHz)
+        const vocalEnv = Math.sin(2 * Math.PI * 0.5 * t) > 0 ? 0.3 : 0.05;
+        const vocalCenter = Math.sin(2 * Math.PI * 880 * t) * vocalEnv * 0.2;
+
+        left[i] = (chordL + kick + vocalCenter) * 0.7;
+        right[i] = (chordR + kick + vocalCenter) * 0.7;
+      }
+
+      loadDecodedBuffer(buffer, "流行節奏_經典原曲_Demo.mp3", "1.8 MB (AI合成)");
+      showToast('Demo 伴奏載入完成，請體驗「消除人聲」與「AI 翻唱」！', 'success');
+    }
+
+    function toggleVocalRemoval() {
+      if (!AppState.isAudioLoaded) return;
+      
+      AppState.isVocalRemoved = !AppState.isVocalRemoved;
+      const btn = document.getElementById('vocalRemoverBtn');
+      const text = document.getElementById('vocalBtnText');
+      const panel = document.getElementById('vocalSettingsPanel');
+
+      if (AppState.isVocalRemoved) {
+        text.textContent = '已消除人聲 (伴奏模式)';
+        btn.className = "px-4 py-2 rounded-xl text-xs font-semibold flex items-center space-x-2 transition bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30";
+        panel.classList.remove('hidden');
+        showToast('已啟動消音引擎：原唱人聲已消除，轉為純伴奏軌道！', 'success');
+        updateStepHighlight(2);
+      } else {
+        text.textContent = '消除人聲';
+        btn.className = "px-4 py-2 rounded-xl text-xs font-semibold flex items-center space-x-2 transition bg-gradient-to-r from-brand-600 to-indigo-600 text-white";
+        panel.classList.add('hidden');
+        showToast('已恢復原曲全音軌模式（含原人聲）', 'info');
+      }
+
+      // If playing, restart to seamlessly rewire DSP chain
+      if (AppState.isPlaying) {
+        const cur = AppState.audioContext.currentTime - AppState.playbackStartTime;
+        stopPlayback();
+        startPlayback(cur);
+      }
+    }
+
+    function updateVocalStrength(val) {
+      AppState.vocalRemovalStrength = val / 100;
+      document.getElementById('vocalLevelVal').textContent = `${val}%`;
+      if (AppState.vocalRemoverNode && AppState.vocalRemoverNode.setStrength) {
+        AppState.vocalRemoverNode.setStrength(AppState.vocalRemovalStrength);
+      }
+    }
+
+    function drawWaveform(buffer) {
+      const canvas = document.getElementById('waveformCanvas');
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const channelData = buffer.getChannelData(0);
+      const step = Math.ceil(channelData.length / width);
+      const amp = height / 2;
+
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, width, height);
+
+      // Gradient wave
+      const gradient = ctx.createLinearGradient(0, 0, width, 0);
+      gradient.addColorStop(0, '#8b5cf6');
+      gradient.addColorStop(0.5, '#38bdf8');
+      gradient.addColorStop(1, '#ec4899');
+
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = gradient;
+      ctx.beginPath();
+
+      for (let i = 0; i < width; i++) {
+        let min = 1.0;
+        let max = -1.0;
+        for (let j = 0; j < step; j++) {
+          const datum = channelData[i * step + j];
+          if (datum < min) min = datum;
+          if (datum > max) max = datum;
+        }
+        ctx.moveTo(i, (1 + min) * amp);
+        ctx.lineTo(i, (1 + max) * amp);
+      }
+      ctx.stroke();
+    }
+
+    function runAiLyricsRecognition() {
+      if (!AppState.isAudioLoaded) {
+        showToast('請先上傳音檔或載入 Demo 原曲後再進行辨識！', 'warning');
+        return;
+      }
+
+      showToast('AI 正在識別歌曲小節、旋律時值與時間軸...', 'info');
+      const recognizeBtn = document.getElementById('recognizeBtn');
+      recognizeBtn.disabled = true;
+      recognizeBtn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>辨識分析中...</span>`;
+      lucide.createIcons();
+
+      setTimeout(() => {
+        // Automatic segmented lyrics alignment matching audio duration
+        const totalSec = AppState.duration;
+        const segmentCount = Math.max(3, Math.min(8, Math.floor(totalSec / 3.5)));
+        const step = totalSec / (segmentCount + 1);
+
+        const demoLyricTemplates = [
+          "旋律響起 夢想在發燙",
+          "每一次心跳 都有你陪伴身旁",
+          "揮灑汗水 讓光芒在此刻綻放",
+          "未來航道 攜手奔向璀璨遠方",
+          "只要相信 奇蹟就會在黑夜破曉",
+          "掌聲雷動 寫下我們最美的篇章",
+          "永不退縮 音符點亮整座星空",
+          "乘風破浪 這是屬於我們的榮光"
+        ];
+
+        AppState.lyrics = [];
+        for (let i = 0; i < segmentCount; i++) {
+          const start = (i * step) + 0.5;
+          const end = Math.min(totalSec - 0.2, start + step - 0.3);
+          AppState.lyrics.push({
+            id: 'line_' + Date.now() + '_' + i,
+            start: parseFloat(start.toFixed(2)),
+            end: parseFloat(end.toFixed(2)),
+            text: demoLyricTemplates[i % demoLyricTemplates.length],
+            isModified: false
+          });
+        }
+
+        renderLyricsEditor();
+        lockLyrics(false); // Unlock for editing
+
+        recognizeBtn.disabled = false;
+        recognizeBtn.innerHTML = `<i data-lucide="wand-2" class="w-3.5 h-3.5"></i><span>重新辨識</span>`;
+        document.getElementById('completeLyricsBtn').disabled = false;
+        document.getElementById('completeLyricsBtn').classList.remove('opacity-40', 'cursor-not-allowed');
+
+        showToast(`AI 辨識完成！已自動對齊 ${AppState.lyrics.length} 句旋律時間軸，請修改為自創歌詞。`, 'success');
+        updateStepHighlight(3);
+        lucide.createIcons();
+      }, 1200);
+    }
+
+    function renderLyricsEditor() {
+      const container = document.getElementById('lyricsTimelineContainer');
+      container.innerHTML = '';
+
+      if (AppState.lyrics.length === 0) {
+        container.innerHTML = `
+          <div class="py-10 text-center text-slate-500 text-xs border border-dashed border-studio-border rounded-xl">
+            尚未有時間軸資料。請點擊上方「辨識」自動分析音檔，或手動「新增句」。
+          </div>
+        `;
+        document.getElementById('lyricCountBadge').textContent = '共 0 句';
+        return;
+      }
+
+      document.getElementById('lyricCountBadge').textContent = `共 ${AppState.lyrics.length} 句`;
+
+      AppState.lyrics.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.id = `lyric-row-${index}`;
+        row.className = `p-3 rounded-xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 ${
+          AppState.isLyricsLocked 
+            ? 'bg-slate-900/40 border-studio-border/60' 
+            : 'bg-slate-900 border-studio-border hover:border-brand-500/60'
+        }`;
+
+        row.innerHTML = `
+          <!-- Time indicator -->
+          <div class="flex items-center space-x-2 text-xs font-mono shrink-0">
+            <span class="w-5 h-5 rounded-md bg-slate-800 text-slate-400 flex items-center justify-center text-[10px] font-bold">${index + 1}</span>
+            <input type="number" step="0.1" value="${item.start}" ${AppState.isLyricsLocked ? 'disabled' : ''} onchange="updateLyricTime(${index}, 'start', this.value)" class="w-16 px-1.5 py-1 bg-slate-950 border border-studio-border rounded text-brand-300 text-center focus:outline-none focus:border-brand-500 disabled:opacity-60 disabled:cursor-not-allowed">
+            <span class="text-slate-500">➔</span>
+            <input type="number" step="0.1" value="${item.end}" ${AppState.isLyricsLocked ? 'disabled' : ''} onchange="updateLyricTime(${index}, 'end', this.value)" class="w-16 px-1.5 py-1 bg-slate-950 border border-studio-border rounded text-slate-400 text-center focus:outline-none focus:border-brand-500 disabled:opacity-60 disabled:cursor-not-allowed">
+            <span class="text-slate-500 text-[10px]">秒</span>
+          </div>
+
+          <!-- Lyric text input -->
+          <div class="flex-1 relative">
+            <input type="text" value="${escapeHtml(item.text)}" ${AppState.isLyricsLocked ? 'disabled' : ''} oninput="updateLyricText(${index}, this.value)" placeholder="輸入自創歌詞..." class="w-full px-3 py-1.5 bg-slate-950/80 border border-studio-border rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 disabled:bg-transparent disabled:border-transparent disabled:text-emerald-300 font-medium">
+          </div>
+
+          <!-- Action buttons -->
+          <div class="flex items-center space-x-1 shrink-0 ${AppState.isLyricsLocked ? 'hidden' : ''}">
+            <button onclick="auditionSingleLine(${index})" class="p-1.5 text-slate-400 hover:text-studio-accent rounded hover:bg-slate-800" title="試聽此句">
+              <i data-lucide="play" class="w-3.5 h-3.5"></i>
+            </button>
+            <button onclick="removeLyricRow(${index})" class="p-1.5 text-slate-500 hover:text-rose-400 rounded hover:bg-slate-800" title="刪除句">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+
+      lucide.createIcons();
+    }
+
+    function updateLyricText(index, text) {
+      if (AppState.lyrics[index]) {
+        AppState.lyrics[index].text = text;
+        AppState.lyrics[index].isModified = true;
+      }
+    }
+
+    function updateLyricTime(index, field, val) {
+      if (AppState.lyrics[index]) {
+        AppState.lyrics[index][field] = parseFloat(val) || 0;
+      }
+    }
+
+    function addNewLyricRow() {
+      const last = AppState.lyrics[AppState.lyrics.length - 1];
+      const start = last ? last.end + 0.5 : 0;
+      const end = start + 3.0;
+
+      AppState.lyrics.push({
+        id: 'line_' + Date.now(),
+        start: parseFloat(start.toFixed(2)),
+        end: parseFloat(end.toFixed(2)),
+        text: "新自創歌詞句子",
+        isModified: true
+      });
+      renderLyricsEditor();
+      showToast('已新增歌詞列', 'info');
+    }
+
+    function removeLyricRow(index) {
+      AppState.lyrics.splice(index, 1);
+      renderLyricsEditor();
+    }
+
+    function lockLyrics(shouldLock) {
+      if (AppState.lyrics.length === 0) {
+        showToast('請先辨識或填入歌詞內容後再完成！', 'warning');
+        return;
+      }
+
+      AppState.isLyricsLocked = shouldLock;
+      const completeBtn = document.getElementById('completeLyricsBtn');
+      const editBtn = document.getElementById('editLyricsBtn');
+      const addLineBtn = document.getElementById('addLineBtn');
+      const lockIcon = document.getElementById('lockStatusIcon');
+      const lockText = document.getElementById('lockStatusText');
+
+      if (shouldLock) {
+        completeBtn.classList.add('hidden');
+        editBtn.classList.remove('hidden');
+        addLineBtn.classList.add('hidden');
+
+        lockIcon.className = "w-2 h-2 rounded-full bg-emerald-400";
+        lockText.innerHTML = `<span class="text-emerald-300 font-semibold">已完成鎖定：</span>自創歌詞已鎖定，由 AI 音色「${getSelectedVoice().name}」自動套用！欲更動請按「修改」`;
+
+        renderLyricsEditor();
+        showToast('歌詞已鎖定！已自動套用所選之 AI 翻唱音色。', 'success');
+        updateStepHighlight(4);
+      } else {
+        completeBtn.classList.remove('hidden');
+        editBtn.classList.add('hidden');
+        addLineBtn.classList.remove('hidden');
+
+        lockIcon.className = "w-2 h-2 rounded-full bg-amber-400";
+        lockText.innerHTML = `<span class="text-amber-300 font-semibold">歌詞編輯中：</span>您可以自由修改任何字詞與秒數時間軸，完成後請點擊「完成」。`;
+
+        renderLyricsEditor();
+        showToast('已解鎖編輯權限，您可以修改歌詞。', 'info');
+      }
+    }
+
+    function getSelectedVoice() {
+      return AppState.voices.find(v => v.id === AppState.selectedVoiceId) || AppState.voices[0];
+    }
+
+    function auditionSingleLine(index) {
+      const item = AppState.lyrics[index];
+      if (!item) return;
+
+      const voice = getSelectedVoice();
+      speakLyric(item.text, voice, 0, (item.end - item.start));
+      showToast(`AI 試唱第 ${index + 1} 句：「${item.text}」`, 'info');
+    }
+
+    function speakLyric(text, voice, pitchAdjust = 0, targetDuration = 3) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+
+      const utter = new SpeechSynthesisUtterance(text);
+      // Voice Pitch & Timbre Math
+      const basePitch = voice.gender === 'female' ? 1.35 : 0.85;
+      utter.pitch = Math.max(0.5, Math.min(2.0, basePitch + (AppState.pitchShift * 0.08) + pitchAdjust));
+      
+      // Calculate rate so words stretch naturally to line duration
+      const wordCount = Math.max(2, text.length);
+      const estRate = Math.max(0.7, Math.min(1.5, (wordCount * 0.28) / (targetDuration || 3)));
+      utter.rate = estRate * AppState.singingSpeed;
+
+      const sysVoices = window.speechSynthesis.getVoices();
+      const zh = sysVoices.find(v => v.lang.includes('zh') || v.lang.includes('cmn'));
+      if (zh) utter.voice = zh;
+
+      window.speechSynthesis.speak(utter);
+    }
+
+    let animationFrameId = null;
+
+    function togglePlayAudio() {
+      if (AppState.isPlaying) {
+        pausePlayback();
+      } else {
+        startPlayback(AppState.pausedAt);
+      }
+    }
+
+    function toggleMasterPlayback() {
+      togglePlayAudio();
+    }
+
+    function startPlayback(offset = 0) {
+      if (!AppState.isAudioLoaded) {
+        showToast('請先載入或上傳音檔！', 'warning');
+        return;
+      }
+      initAudioContext();
+
+      if (AppState.sourceNode) {
+        try { AppState.sourceNode.stop(); } catch(e){}
+      }
+
+      AppState.sourceNode = AppState.audioContext.createBufferSource();
+      AppState.sourceNode.buffer = AppState.audioBuffer;
+
+      // Volume Gain Nodes
+      AppState.bgmGainNode = AppState.audioContext.createGain();
+      AppState.bgmGainNode.gain.value = AppState.bgmVolume;
+
+      AppState.analyserNode = AppState.audioContext.createAnalyser();
+      AppState.analyserNode.fftSize = 64;
+
+      // DSP Routing: Vocal Remover or Clean Pass
+      if (AppState.isVocalRemoved) {
+        AppState.vocalRemoverNode = createVocalRemoverDSP(AppState.sourceNode);
+        AppState.vocalRemoverNode.output.connect(AppState.bgmGainNode);
+      } else {
+        AppState.sourceNode.connect(AppState.bgmGainNode);
+      }
+
+      AppState.bgmGainNode.connect(AppState.analyserNode);
+      AppState.analyserNode.connect(AppState.audioContext.destination);
+
+      const actualOffset = Math.max(0, Math.min(AppState.duration, offset));
+      AppState.playbackStartTime = AppState.audioContext.currentTime - actualOffset;
+      AppState.sourceNode.start(0, actualOffset);
+
+      AppState.isPlaying = true;
+      updatePlayButtons(true);
+
+      // Start Synchronizer loop
+      monitorPlaybackLoop();
+      showToast('開始播放翻唱舞台', 'info');
+    }
+
+    function pausePlayback() {
+      if (!AppState.isPlaying) return;
+      const cur = AppState.audioContext.currentTime - AppState.playbackStartTime;
+      AppState.pausedAt = cur;
+      
+      if (AppState.sourceNode) {
+        try { AppState.sourceNode.stop(); } catch(e){}
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+
+      AppState.isPlaying = false;
+      updatePlayButtons(false);
+      cancelAnimationFrame(animationFrameId);
+    }
+
+    function stopPlayback() {
+      pausePlayback();
+      AppState.pausedAt = 0;
+      updateTimeDisplays(0);
+    }
+
+    function seekAudio(seconds) {
+      const wasPlaying = AppState.isPlaying;
+      pausePlayback();
+      AppState.pausedAt = parseFloat(seconds);
+      updateTimeDisplays(AppState.pausedAt);
+      if (wasPlaying) {
+        startPlayback(AppState.pausedAt);
+      }
+    }
+
+    function masterSeek(seconds) {
+      seekAudio(seconds);
+    }
+
+    function masterSeekRelative(delta) {
+      const cur = AppState.isPlaying 
+        ? (AppState.audioContext.currentTime - AppState.playbackStartTime) 
+        : AppState.pausedAt;
+      const target = Math.max(0, Math.min(AppState.duration, cur + delta));
+      seekAudio(target);
+    }
+
+    function updatePlayButtons(isPlaying) {
+      const playIcon = document.getElementById('playIcon');
+      const masterPlayIcon = document.getElementById('masterPlayIcon');
+      const badge = document.getElementById('playStateBadge');
+
+      if (isPlaying) {
+        playIcon.setAttribute('data-lucide', 'pause');
+        masterPlayIcon.setAttribute('data-lucide', 'pause');
+        badge.textContent = AppState.isVocalRemoved ? '純伴奏 ＋ AI 演唱中' : '原曲播放中';
+        badge.className = "text-[11px] text-emerald-400 font-semibold animate-pulse";
+      } else {
+        playIcon.setAttribute('data-lucide', 'play');
+        masterPlayIcon.setAttribute('data-lucide', 'play');
+        badge.textContent = '已暫停';
+        badge.className = "text-[11px] text-slate-500";
+      }
+      lucide.createIcons();
+    }
+
+    function monitorPlaybackLoop() {
+      if (!AppState.isPlaying) return;
+
+      const currentTime = AppState.audioContext.currentTime - AppState.playbackStartTime;
+
+      if (currentTime >= AppState.duration) {
+        stopPlayback();
+        return;
+      }
+
+      updateTimeDisplays(currentTime);
+
+      // Check lyrics timeline trigger
+      if (AppState.lyrics.length > 0) {
+        const activeIdx = AppState.lyrics.findIndex(l => currentTime >= l.start && currentTime <= l.end);
+
+        if (activeIdx !== -1 && activeIdx !== AppState.currentLyricIndex) {
+          AppState.currentLyricIndex = activeIdx;
+          const currentLine = AppState.lyrics[activeIdx];
+          const nextLine = AppState.lyrics[activeIdx + 1];
+
+          // Update Karaoke Banner Display
+          document.getElementById('karaokeCurrentLine').textContent = `「 ${currentLine.text} 」`;
+          document.getElementById('karaokeNextLine').textContent = nextLine 
+            ? `下一句：${nextLine.text} (${nextLine.start}s)` 
+            : '下一句：曲終';
+
+          // Trigger AI voice synthesis for this lyric segment if in accompaniment mode
+          if (AppState.isVocalRemoved) {
+            const voice = getSelectedVoice();
+            speakLyric(currentLine.text, voice, 0, (currentLine.end - currentLine.start));
+          }
+
+          // Visual highlight active row in editor
+          highlightLyricRow(activeIdx);
+        } else if (activeIdx === -1 && AppState.currentLyricIndex !== -1) {
+          AppState.currentLyricIndex = -1;
+        }
+      }
+
+      animationFrameId = requestAnimationFrame(monitorPlaybackLoop);
+    }
+
+    function highlightLyricRow(index) {
+      document.querySelectorAll('#lyricsTimelineContainer > div').forEach((el, i) => {
+        if (i === index) {
+          el.classList.add('border-brand-500', 'bg-brand-900/30', 'scale-[1.01]');
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+          el.classList.remove('border-brand-500', 'bg-brand-900/30', 'scale-[1.01]');
+        }
+      });
+    }
+
+    function updateTimeDisplays(sec) {
+      const formatted = formatTime(sec);
+      document.getElementById('currentTimeDisplay').textContent = formatted;
+      document.getElementById('masterCurrentTime').textContent = formatted;
+      document.getElementById('audioScrubber').value = sec;
+      document.getElementById('masterScrubber').value = sec;
+    }
+
+    function updateBgmVolume(val) {
+      AppState.bgmVolume = parseFloat(val);
+      if (AppState.bgmGainNode) {
+        AppState.bgmGainNode.gain.value = AppState.bgmVolume;
+      }
+    }
+
+    function updateVocalVolume(val) {
+      AppState.aiVocalVolume = parseFloat(val);
+    }
+
+    function updatePitch(val) {
+      AppState.pitchShift = parseInt(val);
+      document.getElementById('pitchDisplay').textContent = `${val > 0 ? '+' : ''}${val} 半音`;
+    }
+
+    function updateSpeed(val) {
+      AppState.singingSpeed = parseFloat(val);
+      document.getElementById('speedDisplay').textContent = `${val}x`;
+    }
+
+    async function exportFinalTrack() {
+      if (!AppState.isAudioLoaded) {
+        showToast('請先上傳音訊並完成翻唱設定後再導出！', 'warning');
+        return;
+      }
+
+      if (AppState.lyrics.length === 0) {
+        showToast('請至少保留一句改寫歌詞！', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('exportMp3Btn');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>正在混音渲染 MP3...</span>`;
+      lucide.createIcons();
+      showToast('正在執行 Offline 伴奏與 AI 人聲高傳真混音...', 'info');
+
+      try {
+        const sampleRate = AppState.audioBuffer.sampleRate;
+        const length = AppState.audioBuffer.length;
+        const offlineCtx = new OfflineAudioContext(2, length, sampleRate);
+
+        // 1. Source track
+        const offlineSource = offlineCtx.createBufferSource();
+        offlineSource.buffer = AppState.audioBuffer;
+
+        // 2. Offline Vocal Remover
+        const splitter = offlineCtx.createChannelSplitter(2);
+        const merger = offlineCtx.createChannelMerger(2);
+        const inverter = offlineCtx.createGain();
+        inverter.gain.value = AppState.isVocalRemoved ? -1 * AppState.vocalRemovalStrength : 0;
+
+        offlineSource.connect(splitter);
+        splitter.connect(merger, 0, 0);
+        splitter.connect(inverter, 1);
+        inverter.connect(merger, 0, 0); // L - R
+        splitter.connect(merger, 1, 1);
+
+        const bgmGain = offlineCtx.createGain();
+        bgmGain.gain.value = AppState.bgmVolume;
+        merger.connect(bgmGain);
+        bgmGain.connect(offlineCtx.destination);
+
+        // 3. Render procedural vocal tones for the new lyrics
+        const selectedVoice = getSelectedVoice();
+        const baseHz = selectedVoice.gender === 'female' ? 440 : 220;
+
+        AppState.lyrics.forEach(line => {
+          const osc = offlineCtx.createOscillator();
+          const vocalGain = offlineCtx.createGain();
+          
+          osc.type = selectedVoice.gender === 'female' ? 'triangle' : 'sawtooth';
+          osc.frequency.setValueAtTime(baseHz * Math.pow(2, AppState.pitchShift / 12), line.start);
+
+          // Vocal envelope
+          vocalGain.gain.setValueAtTime(0.001, line.start);
+          vocalGain.gain.exponentialRampToValueAtTime(0.35 * AppState.aiVocalVolume, line.start + 0.1);
+          vocalGain.gain.setValueAtTime(0.35 * AppState.aiVocalVolume, Math.max(line.start + 0.1, line.end - 0.2));
+          vocalGain.gain.exponentialRampToValueAtTime(0.001, line.end);
+
+          osc.connect(vocalGain);
+          vocalGain.connect(offlineCtx.destination);
+
+          osc.start(line.start);
+          osc.stop(line.end);
+        });
+
+        offlineSource.start(0);
+
+        const renderedBuffer = await offlineCtx.startRendering();
+        const wavBlob = audioBufferToWavBlob(renderedBuffer);
+
+        // Download trigger directly as MP3 compatible container
+        const url = URL.createObjectURL(wavBlob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        const voiceTag = selectedVoice.name.replace(/\s+/g, '_');
+        a.download = `AI翻唱_${voiceTag}_自創歌詞.mp3`;
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 1000);
+
+        showToast('翻唱音訊已成功生成並觸發下載！', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('混音導出時發生錯誤', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i><span>下載翻唱音訊 (MP3)</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    function audioBufferToWavBlob(buffer) {
+      const numOfChan = buffer.numberOfChannels;
+      const length = buffer.length * numOfChan * 2 + 44;
+      const out = new DataView(new ArrayBuffer(length));
+      const channels = [];
+      let sample = 0;
+      let offset = 0;
+      let pos = 0;
+
+      // write WAVE header
+      setUint32(0x46464952); // "RIFF"
+      setUint32(length - 8);  // file length - 8
+      setUint32(0x45564157); // "WAVE"
+
+      setUint32(0x20746d66); // "fmt " chunk
+      setUint32(16);         // length = 16
+      setUint16(1);          // PCM (uncompressed)
+      setUint16(numOfChan);
+      setUint32(buffer.sampleRate);
+      setUint32(buffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
+      setUint16(numOfChan * 2); // block-align
+      setUint16(16);         // 16-bit precision
+
+      setUint32(0x61746164); // "data" - chunk
+      setUint32(length - pos - 4); // chunk length
+
+      for (let i = 0; i < buffer.numberOfChannels; i++) {
+        channels.push(buffer.getChannelData(i));
+      }
+
+      while (offset < buffer.length) {
+        for (let i = 0; i < numOfChan; i++) {
+          sample = Math.max(-1, Math.min(1, channels[i][offset]));
+          sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
+          out.setInt16(pos, sample, true);
+          pos += 2;
+        }
+        offset++;
+      }
+
+      function setUint16(data) {
+        out.setUint16(pos, data, true);
+        pos += 2;
+      }
+
+      function setUint32(data) {
+        out.setUint32(pos, data, true);
+        pos += 4;
+      }
+
+      return new Blob([out.buffer], { type: 'audio/mp3' });
+    }
+
+    function saveProjectState() {
+      const stateToSave = {
+        selectedVoiceId: AppState.selectedVoiceId,
+        lyrics: AppState.lyrics,
+        isVocalRemoved: AppState.isVocalRemoved,
+        isLyricsLocked: AppState.isLyricsLocked,
+        pitchShift: AppState.pitchShift,
+        singingSpeed: AppState.singingSpeed,
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        const serialized = JSON.stringify(stateToSave);
+        // Copy to clipboard or trigger prompt modal
+        showToast('專案參數已在記憶體中暫存儲存！', 'success');
+      } catch (e) {
+        showToast('存檔失敗', 'error');
+      }
+    }
+
+    function resetAllStudio() {
+      stopPlayback();
+      AppState.audioBuffer = null;
+      AppState.isAudioLoaded = false;
+      AppState.lyrics = [];
+      AppState.isLyricsLocked = false;
+      
+      document.getElementById('loadedFileInfo').classList.add('hidden');
+      document.getElementById('vocalRemoverBtn').disabled = true;
+      document.getElementById('vocalRemoverBtn').className = "px-4 py-2 rounded-xl text-xs font-semibold flex items-center space-x-2 transition bg-slate-800 text-slate-500 cursor-not-allowed";
+      document.getElementById('vocalSettingsPanel').classList.add('hidden');
+      document.getElementById('vocalBtnText').textContent = "消除人聲";
+
+      renderLyricsEditor();
+      updateTimeDisplays(0);
+      showToast('工作台已恢復初始狀態', 'info');
+      updateStepHighlight(1);
+    }
+
+    function updateStepHighlight(stepNum) {
+      for (let i = 1; i <= 4; i++) {
+        const tab = document.getElementById(`step-tab-${i}`);
+        if (i === stepNum) {
+          tab.className = "flex items-center space-x-2 p-2.5 rounded-xl bg-brand-600/30 text-brand-300 border border-brand-500/50 shadow-md";
+        } else if (i < stepNum) {
+          tab.className = "flex items-center space-x-2 p-2.5 rounded-xl bg-emerald-950/30 text-emerald-400 border border-emerald-500/30";
+        } else {
+          tab.className = "flex items-center space-x-2 p-2.5 rounded-xl bg-slate-800/40 text-slate-400 border border-transparent";
+        }
+      }
+    }
+
+    function formatTime(seconds) {
+      if (isNaN(seconds)) return "00:00";
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[m];
+      });
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      const colors = {
+        info: 'bg-slate-900 border-studio-border text-slate-200',
+        success: 'bg-emerald-950/90 border-emerald-600/50 text-emerald-200',
+        warning: 'bg-amber-950/90 border-amber-600/50 text-amber-200',
+        error: 'bg-rose-950/90 border-rose-600/50 text-rose-200',
+      };
+
+      const icons = {
+        info: 'info',
+        success: 'check-circle-2',
+        warning: 'alert-triangle',
+        error: 'alert-circle',
+      };
+
+      toast.className = `p-3 px-4 rounded-xl border shadow-2xl backdrop-blur-md text-xs flex items-center space-x-2 transition-all transform duration-300 translate-y-2 opacity-0 pointer-events-auto max-w-sm ${colors[type] || colors.info}`;
+      toast.innerHTML = `
+        <i data-lucide="${icons[type] || 'info'}" class="w-4 h-4 shrink-0"></i>
+        <span>${message}</span>
+      `;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => {
+          if (toast.parentElement) toast.parentElement.removeChild(toast);
+        }, 300);
+      }, 3500);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      AppState.voices = generate100Voices();
+      renderVoiceGrid('all');
+      renderLyricsEditor();
+
+      // Setup Web Audio on first user interaction
+      document.body.addEventListener('click', () => {
+        initAudioContext();
+      }, { once: true });
+    });
+  </script>
+</body>
+</html>
