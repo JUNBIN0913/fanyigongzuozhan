@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full bg-neutral-950 text-neutral-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>字幕工作站</title>
+  <!-- Google Fonts: Inter & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* 自訂平滑捲動條 */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #171717; }
+    ::-webkit-scrollbar-thumb { background: #383838; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #525252; }
+    
+    .timeline-active {
+      border-color: #3b82f6 !important;
+      background-color: rgba(59, 130, 246, 0.08) !important;
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden font-sans antialiased select-none">
+
+  <!-- 頂部功能導覽列 -->
+  <header class="h-14 bg-neutral-900/90 border-b border-neutral-800 px-4 flex items-center justify-between shrink-0 backdrop-blur z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center shadow-lg shadow-red-500/20">
+        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 4H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm-8 7H7v-2h4v2zm6 4H7v-2h10v2zm0-4h-4v-2h4v2z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-sm font-bold text-white tracking-wide flex items-center gap-2">
+          字幕工作站
+        </h1>
+        <p class="text-[11px] text-neutral-400 hidden sm:block">左側時間軸校對 ✕ 右側譯文編輯 ✕ 繁中 CC 一鍵導出</p>
+      </div>
+    </div>
+
+    <!-- 頂部操作按鈕區：單一儲存鍵與下載 -->
+    <div class="flex items-center gap-2">
+      <!-- 儲存按鈕 -->
+      <button id="btn-save-manual" class="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 transition flex items-center gap-1.5 shadow-sm active:scale-95">
+        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+        <span>儲存</span>
+      </button>
+
+      <div class="h-4 w-px bg-neutral-800 mx-1 hidden sm:block"></div>
+
+      <!-- 下載按鈕 -->
+      <button id="btn-download-srt" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-500 text-white shadow-md shadow-red-600/30 transition flex items-center gap-1.5 active:scale-95">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <span>下載</span>
+      </button>
+
+      <!-- 匯出 VTT -->
+      <button id="btn-download-vtt" class="hidden sm:inline-flex px-2.5 py-1.5 text-xs font-medium rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 transition items-center gap-1">
+        <span>.VTT</span>
+      </button>
+
+      <!-- 複製純繁中字幕 -->
+      <button id="btn-copy-cc" title="複製字幕" class="p-1.5 text-xs font-medium rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    
+    <!-- 左半部/上半部：播放器與預覽視窗 -->
+    <section class="lg:w-5/12 w-full flex flex-col bg-neutral-900 border-r border-neutral-800 shrink-0">
+      
+      <!-- 視訊播放區域容器 -->
+      <div class="relative bg-black aspect-video flex items-center justify-center overflow-hidden group">
+        <video id="video-player" class="w-full h-full object-contain" preload="metadata" crossorigin="anonymous">
+          <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4" type="video/mp4">
+          您的瀏覽器不支援 Video 標籤。
+        </video>
+
+        <!-- 即時畫面 CC 字幕預覽浮層 (嚴格僅顯示繁體中文一者) -->
+        <div class="absolute inset-x-4 bottom-5 pointer-events-none flex justify-center text-center">
+          <div id="video-cc-text" class="inline-block bg-black/85 backdrop-blur-md text-amber-300 font-bold px-4 py-2 rounded-lg text-sm sm:text-base border border-amber-500/20 shadow-2xl transition-all duration-150 empty:hidden max-w-[90%] tracking-wide leading-relaxed">
+            AI 繁體中文字幕預覽就緒
+          </div>
+        </div>
+      </div>
+
+      <!-- 播放器自訂操作欄 -->
+      <div class="p-3 bg-neutral-950 border-b border-neutral-800 flex flex-col gap-2">
+        <!-- 進度條 -->
+        <div class="flex items-center gap-2">
+          <span id="current-time-display" class="font-mono text-xs text-neutral-400 w-12 text-right">00:00</span>
+          <input type="range" id="video-progress" class="flex-1 h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-red-500" value="0" min="0" max="100" step="0.1">
+          <span id="duration-display" class="font-mono text-xs text-neutral-400 w-12">00:00</span>
+        </div>
+
+        <!-- 按鈕控制列 -->
+        <div class="flex items-center justify-between pt-1">
+          <div class="flex items-center gap-1.5">
+            <button id="btn-play-pause" class="p-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white transition">
+              <svg id="icon-play" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <svg id="icon-pause" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+            <button id="btn-back-2s" class="p-2 text-xs rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition" title="倒退 2 秒">
+              -2s
+            </button>
+            <button id="btn-forward-2s" class="p-2 text-xs rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition" title="前進 2 秒">
+              +2s
+            </button>
+          </div>
+
+          <!-- 自訂影片載入與 AI 辨識 -->
+          <div class="flex items-center gap-2">
+            <!-- AI 辨識按鈕 -->
+            <button id="btn-ai-transcribe" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-sm transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" title="辨識影音語音與畫面字幕並翻譯為繁中">
+              <svg id="icon-transcribe-sparkle" class="w-3.5 h-3.5 text-amber-300" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>
+              </svg>
+              <svg id="icon-transcribe-spinner" class="w-3.5 h-3.5 animate-spin hidden text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span id="label-transcribe">辨識</span>
+            </button>
+
+            <!-- 再譯按鈕 (位於辨識與換影片之間) -->
+            <button id="btn-retranslate-open" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-neutral-800 hover:bg-neutral-700 text-emerald-400 border border-neutral-700 hover:border-emerald-500/50 shadow-sm transition flex items-center gap-1.5 active:scale-95" title="上傳外語 CC 字幕檔並由 Gemini 翻譯為繁中">
+              <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+              <span>再譯</span>
+            </button>
+
+            <label class="cursor-pointer px-2.5 py-1.5 text-xs rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 transition flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              <span>換影片...</span>
+              <input type="file" id="input-local-video" accept="video/*" class="hidden">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部填滿保留區 -->
+      <div class="flex-1 bg-neutral-900/30"></div>
+    </section>
+
+    <!-- 右半部：左時間軸 ✕ 右譯文 雙欄對齊編輯列表 -->
+    <section class="lg:w-7/12 w-full flex flex-col bg-neutral-950 overflow-hidden">
+      
+      <!-- 編輯區頂部控制條 -->
+      <div class="h-11 px-4 border-b border-neutral-800 bg-neutral-900/40 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold text-neutral-300">時間軸字幕軌道</span>
+          <span id="sub-count-badge" class="px-2 py-0.5 rounded-full text-[10px] bg-neutral-800 text-neutral-400">0 句</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-add-line" class="px-2.5 py-1 text-xs rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 transition flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            新增字幕列
+          </button>
+          <label class="flex items-center gap-1.5 text-xs text-neutral-400 cursor-pointer">
+            <input type="checkbox" id="check-auto-scroll" checked class="rounded border-neutral-700 bg-neutral-900 text-red-500 focus:ring-0">
+            自動滾動追蹤
+          </label>
+        </div>
+      </div>
+
+      <!-- 字幕軌道主清單 -->
+      <div id="subtitles-container" class="flex-1 overflow-y-auto p-3 space-y-2.5 select-text">
+        <!-- 動態渲染字幕項目 -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 全域浮動提示 (Toast) -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-neutral-900 text-white px-4 py-2.5 rounded-xl border border-neutral-700 shadow-2xl flex items-center gap-2 text-xs font-medium translate-y-10 opacity-0 pointer-events-none transition-all duration-200 z-50">
+    <span id="toast-message">操作成功</span>
+  </div>
+
+  <!-- 彈窗 1：辨識語言選項設定彈窗 -->
+  <div id="modal-transcribe-lang" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-neutral-900 border border-neutral-700 rounded-2xl w-full max-w-sm p-5 shadow-2xl flex flex-col gap-4 text-neutral-100">
+      <div class="flex items-center justify-between border-b border-neutral-800 pb-3">
+        <h3 class="text-sm font-bold flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+          選擇辨識原文語言
+        </h3>
+        <button id="btn-close-lang-modal" class="text-neutral-400 hover:text-white p-1 rounded-lg">✕</button>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <label class="text-xs text-neutral-300">請指定影片原文語系（可複選常見組合）：</label>
+        <select id="select-audio-lang" class="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-purple-500">
+          <option value="韓語" selected>韓語（預設）</option>
+          <option value="英語">英語</option>
+          <option value="韓語 + 英語（雙語穿插）">韓語 + 英語（雙語穿插）</option>
+          <option value="日語">日語</option>
+          <option value="日語 + 英語">日語 + 英語</option>
+          <option value="自動偵測所有語言">自動偵測語音與畫面語言</option>
+        </select>
+        
+        <div class="p-2.5 rounded-lg bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-400 flex items-start gap-2">
+          <svg class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>系統將同時抽取<strong>音訊聲學</strong>與<strong>畫面關鍵影格字幕 (OCR)</strong>，並請 Gemini 整合校正後直譯為台灣繁體中文。</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-neutral-800">
+        <button id="btn-cancel-transcribe" class="px-3 py-1.5 text-xs rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300">取消</button>
+        <button id="btn-start-transcribe" class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-md">開始辨識</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗 2：現有外語 CC 字幕「再譯」彈窗 -->
+  <div id="modal-retranslate" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-neutral-900 border border-neutral-700 rounded-2xl w-full max-w-md p-5 shadow-2xl flex flex-col gap-4 text-neutral-100">
+      <div class="flex items-center justify-between border-b border-neutral-800 pb-3">
+        <h3 class="text-sm font-bold flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          再譯現有外語 CC 字幕
+        </h3>
+        <button id="btn-close-retranslate-modal" class="text-neutral-400 hover:text-white p-1 rounded-lg">✕</button>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="text-xs text-neutral-300 mb-1.5 block">1. 選擇要翻譯的外語字幕來源語言：</label>
+          <select id="select-retranslate-lang" class="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-emerald-500">
+            <option value="韓語" selected>韓語（預設）</option>
+            <option value="英語">英語</option>
+            <option value="日語">日語</option>
+            <option value="西語 / 法語 / 其他外語">西語 / 法語 / 其他外語</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs text-neutral-300 mb-1.5 block">2. 上傳 CC 字幕檔案 (.srt 或 .vtt)：</label>
+          <input type="file" id="input-sub-file" accept=".srt,.vtt,text/plain" class="w-full text-xs text-neutral-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer bg-neutral-950 border border-neutral-800 rounded-lg p-1.5">
+          <p id="retranslate-file-info" class="text-[11px] text-neutral-500 mt-1 italic">未選取檔案</p>
+        </div>
+
+        <div class="p-2.5 rounded-lg bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-400 flex items-start gap-2">
+          <svg class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <span>將保留原字幕精準時間軸，原文字幕填入「原文」，Gemini 生成的流暢譯文填入「譯文」，並一鍵匯入前臺。</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-neutral-800">
+        <button id="btn-cancel-retranslate" class="px-3 py-1.5 text-xs rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300">取消</button>
+        <button id="btn-execute-retranslate" class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-md flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+          <span id="label-retranslate-exec">開始翻譯</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 預設示範字幕資料
+    const DEFAULT_SUBTITLES = [
+      { id: 1, start: 0.8, end: 3.5, original: "What are you doing here?", target: "你在這裡做什麼？" },
+      { id: 2, start: 4.2, end: 7.0, original: "We need to recalibrate the tracking system immediately.", target: "我們必須立刻重新校準追蹤系統。" },
+      { id: 3, start: 7.8, end: 11.2, original: "The energy fluctuation is spreading across the perimeter.", target: "能量波動正在往外圍防線迅速擴散。" },
+      { id: 4, start: 12.0, end: 15.6, original: "I have prepared the defense grid. Just give the order.", target: "我已經備妥防禦電網，隨時聽候指令。" },
+      { id: 5, start: 16.5, end: 20.0, original: "All stations, confirm your coordinates and synchronize time.", target: "所有工作站，確認你們的座標並進行對時。" }
+    ];
+
+    // 本地儲存鍵值
+    const STORAGE_KEY = 'yt_cc_subtitles_project_data';
+
+    // 應用狀態
+    let subtitles = [];
+    let activeTrackIndex = -1;
+    let currentVideoBlob = null; // 記錄目前影片 Blob
+    // DOM 元素引用
+    const video = document.getElementById('video-player');
+    const videoCCText = document.getElementById('video-cc-text');
+    const container = document.getElementById('subtitles-container');
+    const progressBar = document.getElementById('video-progress');
+    const currentTimeDisp = document.getElementById('current-time-display');
+    const durationDisp = document.getElementById('duration-display');
+    const playPauseBtn = document.getElementById('btn-play-pause');
+    const iconPlay = document.getElementById('icon-play');
+    const iconPause = document.getElementById('icon-pause');
+    const subCountBadge = document.getElementById('sub-count-badge');
+    const autoScrollCheck = document.getElementById('check-auto-scroll');
+
+    // 時間格式化工具：秒數轉 MM:SS
+    function formatTimeDisplay(sec) {
+      if (isNaN(sec) || sec < 0) sec = 0;
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    // 時間格式化工具：秒數轉 SRT 標準格式
+    function formatSRTTime(seconds) {
+      if (isNaN(seconds) || seconds < 0) seconds = 0;
+      const totalMs = Math.round(seconds * 1000);
+      const ms = String(totalMs % 1000).padStart(3, '0');
+      const totalSec = Math.floor(totalMs / 1000);
+      const s = String(totalSec % 60).padStart(2, '0');
+      const m = String(Math.floor((totalSec / 60) % 60)).padStart(2, '0');
+      const h = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+      return `${h}:${m}:${s},${ms}`;
+    }
+
+    // 時間格式化工具：秒數轉 VTT 標準格式
+    function formatVTTTime(seconds) {
+      return formatSRTTime(seconds).replace(',', '.');
+    }
+
+    // 格式化解析字串
+    function parseTimeToSeconds(val) {
+      if (typeof val === 'number') return val;
+      val = String(val).trim();
+      if (val.includes(':')) {
+        const parts = val.split(':');
+        if (parts.length === 2) {
+          return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+        } else if (parts.length === 3) {
+        return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2].replace(',', '.'));
+      }
+    }
+    return parseFloat(val) || 0;
+  }
+
+  // 讀取本機存檔
+  function loadSavedProject() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          subtitles = parsed;
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('載入存檔失敗，使用預設值', e);
+    }
+    subtitles = JSON.parse(JSON.stringify(DEFAULT_SUBTITLES));
+  }
+
+  // 儲存至本機
+  function saveSubtitlesToStorage() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(subtitles));
+    } catch (e) {
+      console.error('儲存失敗', e);
+    }
+  }
+
+  // 渲染字幕列表 (最上：時間軸 / 中間：譯文 / 底下：原文，自動折行)
+  function renderSubtitles() {
+    container.innerHTML = '';
+    subCountBadge.textContent = `${subtitles.length} 句`;
+
+    subtitles.forEach((sub, idx) => {
+      const isLocked = sub.locked !== false; // 預設鎖定
+      const row = document.createElement('div');
+      row.id = `sub-row-${idx}`;
+      row.className = `px-3.5 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900/70 hover:bg-neutral-800/40 transition flex flex-col gap-1.5 text-xs text-left group ${idx === activeTrackIndex ? 'timeline-active' : ''}`;
+
+      // 鎖定/修改切換按鈕
+      const lockBtn = isLocked
+        ? `<button class="btn-toggle-lock px-2 py-0.5 rounded text-[11px] font-medium transition flex items-center gap-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-neutral-200 border border-neutral-700" data-index="${idx}" title="目前為鎖定狀態，點擊切換為修改">
+            <svg class="w-3 h-3 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            <span>鎖定</span>
+          </button>`
+        : `<button class="btn-toggle-lock px-2 py-0.5 rounded text-[11px] font-medium transition flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 shadow-sm" data-index="${idx}" title="目前為修改狀態，點擊鎖定">
+            <svg class="w-3 h-3 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            <span>修改</span>
+          </button>`;
+
+      // 最上方：時間軸（如 01:05~06:27）及操作工具
+      const timeHeaderDisplay = isLocked
+        ? `
+          <div class="flex items-center gap-2">
+            <span class="text-neutral-500 font-mono text-[11px]">#${idx + 1}</span>
+            <button class="btn-jump-to p-0.5 rounded hover:bg-neutral-800 text-sky-400 hover:text-sky-300 transition flex items-center gap-1.5" title="跳至此處播放" data-index="${idx}">
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <span class="font-mono text-xs font-semibold text-neutral-100 tracking-wide">${formatTimeDisplay(sub.start)}~${formatTimeDisplay(sub.end)}</span>
+            </button>
+          </div>
+        `
+        : `
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-neutral-500 font-mono text-[11px]">#${idx + 1}</span>
+            <button class="btn-jump-to p-0.5 rounded hover:bg-neutral-800 text-sky-400 transition" title="跳至此處播放" data-index="${idx}">
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <div class="flex items-center gap-1">
+              <span class="text-[10px] text-neutral-500 font-mono">起</span>
+              <input type="text" class="input-start-time w-24 bg-neutral-950 border border-amber-500/50 rounded px-1.5 py-0.5 font-mono text-[11px] text-neutral-100 focus:outline-none" value="${formatSRTTime(sub.start)}" data-index="${idx}">
+              <button class="btn-set-start text-[10px] px-1 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-sky-400 transition" title="以目前播放秒數為起點" data-index="${idx}">📍</button>
+            </div>
+            <span class="text-neutral-500 font-mono">~</span>
+            <div class="flex items-center gap-1">
+              <span class="text-[10px] text-neutral-500 font-mono">迄</span>
+              <input type="text" class="input-end-time w-24 bg-neutral-950 border border-amber-500/50 rounded px-1.5 py-0.5 font-mono text-[11px] text-neutral-100 focus:outline-none" value="${formatSRTTime(sub.end)}" data-index="${idx}">
+              <button class="btn-set-end text-[10px] px-1 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-amber-400 transition" title="以目前播放秒數為迄點" data-index="${idx}">📍</button>
+            </div>
+          </div>
+        `;
+
+      // 顯著的白色區隔線
+      const topSection = `
+        <div class="flex items-center justify-between pb-1.5 border-b border-white/60">
+          ${timeHeaderDisplay}
+          <div class="flex items-center gap-1.5 shrink-0">
+            ${lockBtn}
+            <button class="btn-delete-row text-neutral-500 hover:text-red-400 p-1 rounded transition opacity-60 group-hover:opacity-100" title="刪除此列" data-index="${idx}">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+
+      // 中間：譯文（標籤與內容完全水平貼齊對齊）
+      const targetContent = isLocked
+        ? `
+          <div class="flex-1 text-xs text-neutral-100 font-medium break-words whitespace-pre-wrap leading-relaxed text-left">
+            ${sub.target ? escapeHtml(sub.target) : '<span class="text-neutral-600 italic">無譯文</span>'}
+          </div>
+        `
+        : `
+          <textarea rows="2" class="input-target-text flex-1 bg-neutral-950 border border-amber-500/50 rounded-lg p-2 text-xs text-neutral-100 leading-normal placeholder-neutral-600 break-words whitespace-pre-wrap focus:outline-none focus:border-amber-400" placeholder="請填寫譯文..." data-index="${idx}">${sub.target || ''}</textarea>
+        `;
+
+      const midSection = `
+        <div class="w-full flex items-start gap-2.5 pt-1">
+          <span class="text-xs text-neutral-400 font-medium shrink-0 w-8 select-none leading-relaxed">譯文</span>
+          ${targetContent}
+        </div>
+      `;
+
+      // 底下：原文（標籤與內容完全水平貼齊對齊，上下緊湊）
+      const originalContent = isLocked
+        ? `
+          <div class="flex-1 text-[11px] text-neutral-400 break-words whitespace-pre-wrap leading-relaxed text-left">
+            ${sub.original ? escapeHtml(sub.original) : '<span class="text-neutral-600 italic">無原文</span>'}
+          </div>
+        `
+        : `
+          <textarea rows="1" class="input-original-text flex-1 bg-neutral-950/80 border border-neutral-700/60 rounded p-1.5 text-[11px] text-neutral-300 leading-normal break-words whitespace-pre-wrap placeholder-neutral-600 focus:outline-none focus:border-neutral-500" placeholder="輸入原語..." data-index="${idx}">${sub.original || ''}</textarea>
+        `;
+
+      const bottomSection = `
+        <div class="w-full flex items-start gap-2.5">
+          <span class="text-xs text-neutral-400 font-medium shrink-0 w-8 select-none leading-relaxed">原文</span>
+          ${originalContent}
+        </div>
+      `;
+
+      row.innerHTML = topSection + midSection + bottomSection;
+      container.appendChild(row);
+    });
+
+    bindRowEvents();
+  }
+
+  // 輔助防 XSS 與純文字顯示
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  // 綁定列表內的互動事件
+  function bindRowEvents() {
+    // 點擊播放跳轉
+    document.querySelectorAll('.btn-jump-to').forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.index, 10);
+        video.currentTime = subtitles[idx].start;
+        video.play();
+      };
+    });
+
+    // 鎖定 / 修改 切換事件
+    document.querySelectorAll('.btn-toggle-lock').forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.index, 10);
+        const isCurrentlyLocked = subtitles[idx].locked !== false;
+        subtitles[idx].locked = !isCurrentlyLocked;
+        saveSubtitlesToStorage();
+        renderSubtitles();
+        showToast(subtitles[idx].locked ? `已鎖定 #${idx + 1}` : `已切換為修改模式 #${idx + 1}`);
+      };
+    });
+
+    // 繁中譯文變更（中間）
+    document.querySelectorAll('.input-target-text').forEach(textarea => {
+      textarea.oninput = (e) => {
+        const idx = parseInt(e.target.dataset.index, 10);
+        if (subtitles[idx].locked !== false) return;
+        subtitles[idx].target = e.target.value;
+        saveSubtitlesToStorage();
+        updateLiveCCSubtitle(video.currentTime);
+      };
+    });
+
+    // 原語內容變更（底下）
+    document.querySelectorAll('.input-original-text').forEach(textarea => {
+      textarea.oninput = (e) => {
+        const idx = parseInt(e.target.dataset.index, 10);
+        if (subtitles[idx].locked !== false) return;
+        subtitles[idx].original = e.target.value;
+        saveSubtitlesToStorage();
+      };
+    });
+
+    // 起點時間手動修改
+    document.querySelectorAll('.input-start-time').forEach(input => {
+      input.onchange = (e) => {
+        const idx = parseInt(e.target.dataset.index, 10);
+        if (subtitles[idx].locked !== false) return;
+        subtitles[idx].start = parseTimeToSeconds(e.target.value);
+        e.target.value = formatSRTTime(subtitles[idx].start);
+        saveSubtitlesToStorage();
+      };
+    });
+
+    // 終點時間手動修改
+    document.querySelectorAll('.input-end-time').forEach(input => {
+      input.onchange = (e) => {
+        const idx = parseInt(e.target.dataset.index, 10);
+        if (subtitles[idx].locked !== false) return;
+        subtitles[idx].end = parseTimeToSeconds(e.target.value);
+        e.target.value = formatSRTTime(subtitles[idx].end);
+        saveSubtitlesToStorage();
+      };
+    });
+
+    // 當前播放秒數設定為起點
+    document.querySelectorAll('.btn-set-start').forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.index, 10);
+        if (subtitles[idx].locked !== false) return;
+        subtitles[idx].start = Math.max(0, video.currentTime);
+        saveSubtitlesToStorage();
+        renderSubtitles();
+        showToast(`已將 #${idx + 1} 起點更新為 ${formatSRTTime(subtitles[idx].start)}`);
+      };
+    });
+
+    // 當前播放秒數設定為迄點
+    document.querySelectorAll('.btn-set-end').forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.index, 10);
+        if (subtitles[idx].locked !== false) return;
+        subtitles[idx].end = Math.max(subtitles[idx].start, video.currentTime);
+        saveSubtitlesToStorage();
+        renderSubtitles();
+        showToast(`已將 #${idx + 1} 迄點更新為 ${formatSRTTime(subtitles[idx].end)}`);
+      };
+    });
+
+    // 刪除該行
+    document.querySelectorAll('.btn-delete-row').forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.index, 10);
+        subtitles.splice(idx, 1);
+        saveSubtitlesToStorage();
+        renderSubtitles();
+        showToast('已刪除字幕列');
+      };
+    });
+  }
+
+  // 影音播放同步：畫面字幕浮層（嚴格僅繁體中文）
+    function updateLiveCCSubtitle(curr) {
+      const activeIdx = subtitles.findIndex(s => curr >= s.start && curr <= s.end);
+
+      // 高亮當前活動軌道
+      if (activeIdx !== activeTrackIndex) {
+        if (activeTrackIndex !== -1) {
+          const prev = document.getElementById(`sub-row-${activeTrackIndex}`);
+          if (prev) prev.classList.remove('timeline-active');
+        }
+        activeTrackIndex = activeIdx;
+        if (activeIdx !== -1) {
+          const activeEl = document.getElementById(`sub-row-${activeIdx}`);
+          if (activeEl) {
+            activeEl.classList.add('timeline-active');
+            if (autoScrollCheck.checked) {
+              activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }
+        }
+      }
+
+      // 畫面浮層：僅顯示繁體中文
+      if (activeIdx !== -1) {
+        const text = (subtitles[activeIdx].target || '').trim();
+        if (text) {
+          videoCCText.textContent = text;
+          videoCCText.classList.remove('hidden');
+        } else {
+          videoCCText.textContent = '';
+          videoCCText.classList.add('hidden');
+        }
+      } else {
+        videoCCText.textContent = '';
+        videoCCText.classList.add('hidden');
+      }
+    }
+
+    // 播放器時間推進事件
+    video.ontimeupdate = () => {
+      const curr = video.currentTime;
+      const dur = video.duration || 1;
+      progressBar.value = (curr / dur) * 100;
+      currentTimeDisp.textContent = formatTimeDisplay(curr);
+      updateLiveCCSubtitle(curr);
+    };
+
+    // 視訊元數據載入完成
+    video.onloadedmetadata = () => {
+      durationDisp.textContent = formatTimeDisplay(video.duration);
+    };
+
+    // 播放/暫停按鈕
+    playPauseBtn.onclick = () => {
+      if (video.paused) {
+        video.play();
+      } else {
+        video.pause();
+      }
+    };
+
+    video.onplay = () => {
+      iconPlay.classList.add('hidden');
+      iconPause.classList.remove('hidden');
+    };
+
+    video.onpause = () => {
+      iconPlay.classList.remove('hidden');
+      iconPause.classList.add('hidden');
+    };
+
+    // 進度條拖移
+    progressBar.oninput = () => {
+      const dur = video.duration || 1;
+      video.currentTime = (progressBar.value / 100) * dur;
+    };
+
+    // 前後快進退
+    document.getElementById('btn-back-2s').onclick = () => {
+      video.currentTime = Math.max(0, video.currentTime - 2);
+    };
+    document.getElementById('btn-forward-2s').onclick = () => {
+      video.currentTime = Math.min(video.duration || 9999, video.currentTime + 2);
+    };
+
+    // 載入本機自訂影片
+    document.getElementById('input-local-video').onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        currentVideoBlob = file;
+        const objectUrl = URL.createObjectURL(file);
+        video.src = objectUrl;
+        video.play();
+        showToast(`已載入影片：${file.name}`);
+      }
+    };
+
+    // 新增字幕列
+    document.getElementById('btn-add-line').onclick = () => {
+      const now = video.currentTime;
+      const newItem = {
+        id: Date.now(),
+        start: Math.round(now * 10) / 10,
+        end: Math.round((now + 3) * 10) / 10,
+        original: "",
+        target: ""
+      };
+      subtitles.push(newItem);
+      subtitles.sort((a, b) => a.start - b.start);
+      saveSubtitlesToStorage();
+      renderSubtitles();
+      showToast('已新增一列字幕');
+    };
+
+    // 儲存按鈕
+    document.getElementById('btn-save-manual').onclick = () => {
+      saveSubtitlesToStorage();
+      showToast('儲存成功');
+    };
+
+    // 產生純繁體中文 SRT（僅包含時間軸與繁體中文）
+    function buildPureZhTwSRT() {
+      return subtitles.map((sub, i) => {
+        const zh = (sub.target || '').trim();
+        return `${i + 1}\n${formatSRTTime(sub.start)} --> ${formatSRTTime(sub.end)}\n${zh}\n`;
+      }).join('\n');
+    }
+
+    // 產生純繁體中文 VTT
+    function buildPureZhTwVTT() {
+      let vtt = "WEBVTT\n\n";
+      subtitles.forEach((sub, i) => {
+        const zh = (sub.target || '').trim();
+        vtt += `${i + 1}\n${formatVTTTime(sub.start)} --> ${formatVTTTime(sub.end)}\n${zh}\n\n`;
+      });
+      return vtt;
+    }
+
+    // 通用檔案下載函式
+    function downloadBlob(content, fileName, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // 下載純繁中 SRT（改名為「下載」按鈕觸發）
+    document.getElementById('btn-download-srt').onclick = () => {
+      if (subtitles.length === 0) {
+        showToast('目前尚無字幕資料');
+        return;
+      }
+      const srtData = buildPureZhTwSRT();
+      downloadBlob(srtData, 'subtitles_zh-TW.srt', 'text/plain;charset=utf-8');
+      showToast('已下載繁體中文字幕');
+    };
+
+    // 下載純繁中 VTT
+    document.getElementById('btn-download-vtt').onclick = () => {
+      if (subtitles.length === 0) {
+        showToast('目前尚無字幕資料');
+        return;
+      }
+      const vttData = buildPureZhTwVTT();
+      downloadBlob(vttData, 'subtitles_zh-TW.vtt', 'text/vtt;charset=utf-8');
+      showToast('已下載 VTT 字幕');
+    };
+
+    // 複製純繁中 SRT 內容至剪貼簿
+    document.getElementById('btn-copy-cc').onclick = () => {
+      if (subtitles.length === 0) {
+        showToast('無字幕可複製');
+        return;
+      }
+      const srtData = buildPureZhTwSRT();
+      const tempTextArea = document.createElement('textarea');
+      tempTextArea.value = srtData;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      try {
+        document.execCommand('copy');
+        showToast('已複製純繁中字幕');
+      } catch (err) {
+        showToast('複製失敗');
+      }
+      document.body.removeChild(tempTextArea);
+    };
+
+    // 顯示訊息通知
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toast-message');
+      toastText.textContent = msg;
+      toast.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+      }, 2000);
+    }
+
+    // 音訊轉 16kHz 單聲道 PCM WAV
+    async function extractAudioWav(blobOrUrl) {
+      let arrayBuffer;
+      if (blobOrUrl instanceof Blob) {
+        arrayBuffer = await blobOrUrl.arrayBuffer();
+      } else {
+        const resp = await fetch(blobOrUrl);
+        arrayBuffer = await resp.arrayBuffer();
+      }
+
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+      // 取樣頻率 16000Hz 單聲道
+      const targetRate = 16000;
+      const totalLength = Math.min(Math.floor(audioBuffer.duration * targetRate), targetRate * 300); // 限制最多 5 分鐘以確保傳輸穩定
+      const offlineCtx = new OfflineAudioContext(1, totalLength, targetRate);
+
+      const source = offlineCtx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(offlineCtx.destination);
+      source.start(0);
+
+      const rendered = await offlineCtx.startRendering();
+      const pcmData = rendered.getChannelData(0);
+
+      // 編碼 WAV
+      const wavBuffer = new ArrayBuffer(44 + pcmData.length * 2);
+      const view = new DataView(wavBuffer);
+      function writeStr(offset, str) {
+        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+      }
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + pcmData.length * 2, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true); // PCM
+      view.setUint16(22, 1, true); // Mono
+      view.setUint32(24, targetRate, true);
+      view.setUint32(28, targetRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, pcmData.length * 2, true);
+
+      let offset = 44;
+      for (let i = 0; i < pcmData.length; i++) {
+        const s = Math.max(-1, Math.min(1, pcmData[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        offset += 2;
+      }
+      return new Blob([view], { type: 'audio/wav' });
+    }
+
+    // 擷取目前影片關鍵影格畫面 (提供給 Gemini 做畫面字幕 OCR 與語境校正)
+    async function sampleVideoFrames(videoEl, count = 4) {
+      const frames = [];
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const duration = videoEl.duration || 10;
+      const originalTime = videoEl.currentTime;
+
+      // 限制擷取尺寸確保請求快速穩定
+      const scale = Math.min(1, 640 / (videoEl.videoWidth || 640));
+      canvas.width = Math.round((videoEl.videoWidth || 640) * scale);
+      canvas.height = Math.round((videoEl.videoHeight || 360) * scale);
+
+      for (let i = 0; i < count; i++) {
+        const targetSec = (duration / (count + 1)) * (i + 1);
+        try {
+          videoEl.currentTime = targetSec;
+          await new Promise(res => {
+            const onSeek = () => {
+              videoEl.removeEventListener('seeked', onSeek);
+              res();
+            };
+            videoEl.addEventListener('seeked', onSeek);
+          });
+          ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.65);
+          const base64 = dataUrl.split(',')[1];
+          frames.push(base64);
+        } catch (e) {
+          console.warn('影格擷取失敗', e);
+        }
+      }
+
+      // 還原播放器時間
+      videoEl.currentTime = originalTime;
+      return frames;
+    }
+
+    // Blob 轉 Base64
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    // 呼叫 Gemini 3 Flash 進行多模態（語音 + 畫面字幕）辨識與繁中翻譯
+    async function transcribeMultimodalWithGemini(audioBase64, framesBase64, targetLang) {
+      const apiKey = "";
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      const systemPrompt = `你是一位專業的影音聽辨與繁體中文字幕專家。
+使用者的影片主要原文語言為：【${targetLang}】。
+請同時參考音訊發音與影片畫面上的字幕/畫面文字（OCR），精準擷取每一句台詞的精確起迄秒數、原文字幕(original)，並翻譯成道地、符合台灣語境的自然繁體中文(target)。
+請嚴格以 JSON 陣列直接回傳，不得加入 Markdown 解說文字。`;
+
+      const userParts = [
+        { text: `請根據音訊與附帶的關鍵畫面截圖，辨識【${targetLang}】原文台詞與字幕，並產出繁體中文翻譯。格式：每筆需含 start (秒數數字), end (秒數數字), original (原文), target (繁體中文)。` },
+        {
+          inlineData: {
+            mimeType: "audio/wav",
+            data: audioBase64
+          }
+        }
+      ];
+
+      // 附加畫面截圖
+      framesBase64.forEach(b64 => {
+        userParts.push({
+          inlineData: {
+            mimeType: "image/jpeg",
+            data: b64
+          }
+        });
+      });
+
+      const payload = {
+        contents: [{ role: "user", parts: userParts }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                start: { type: "NUMBER" },
+                end: { type: "NUMBER" },
+                original: { type: "STRING" },
+                target: { type: "STRING" }
+              },
+              required: ["start", "end", "original", "target"],
+              propertyOrdering: ["start", "end", "original", "target"]
+            }
+          }
+        }
+      };
+
+      let delay = 1000;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) return await res.json();
+          if (res.status === 429 || res.status >= 500) {
+            await new Promise(r => setTimeout(r, delay));
+            delay *= 2;
+            continue;
+          }
+          throw new Error(`API 回傳錯誤: ${res.status}`);
+        } catch (err) {
+          if (attempt === 2) throw err;
+          await new Promise(r => setTimeout(r, delay));
+          delay *= 2;
+        }
+      }
+    }
+
+    // 辨識流程彈窗與執行
+    const modalTranscribe = document.getElementById('modal-transcribe-lang');
+    const btnTranscribe = document.getElementById('btn-ai-transcribe');
+    const labelTranscribe = document.getElementById('label-transcribe');
+    const iconSparkle = document.getElementById('icon-transcribe-sparkle');
+    const iconSpinner = document.getElementById('icon-transcribe-spinner');
+    const btnCloseLangModal = document.getElementById('btn-close-lang-modal');
+    const btnCancelTranscribe = document.getElementById('btn-cancel-transcribe');
+    const btnStartTranscribe = document.getElementById('btn-start-transcribe');
+    const selectAudioLang = document.getElementById('select-audio-lang');
+
+    // 點擊「辨識」先跳出語言選擇彈窗
+    btnTranscribe.onclick = () => {
+      modalTranscribe.classList.remove('hidden');
+    };
+
+    btnCloseLangModal.onclick = () => modalTranscribe.classList.add('hidden');
+    btnCancelTranscribe.onclick = () => modalTranscribe.classList.add('hidden');
+
+    btnStartTranscribe.onclick = async () => {
+      const selectedLanguage = selectAudioLang.value;
+      modalTranscribe.classList.add('hidden');
+
+      try {
+        btnTranscribe.disabled = true;
+        iconSparkle.classList.add('hidden');
+        iconSpinner.classList.remove('hidden');
+        labelTranscribe.textContent = '多模態擷取中...';
+        showToast(`正在擷取【${selectedLanguage}】音軌與畫面字幕...`);
+
+        const targetSource = currentVideoBlob || video.currentSrc || video.src;
+        
+        // 同時擷取音訊與畫面截圖
+        const [wavBlob, frames] = await Promise.all([
+          extractAudioWav(targetSource),
+          sampleVideoFrames(video, 4)
+        ]);
+
+        labelTranscribe.textContent = 'Gemini 辨識中...';
+        showToast('Gemini 正在同步辨識音訊與畫面字幕...');
+
+        const base64Audio = await blobToBase64(wavBlob);
+        const data = await transcribeMultimodalWithGemini(base64Audio, frames, selectedLanguage);
+
+        const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!candidateText) throw new Error('未取得辨識結果');
+
+        const parsed = JSON.parse(candidateText);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          subtitles = parsed.map((item, i) => ({
+            id: Date.now() + i,
+            start: Math.max(0, Number(item.start) || 0),
+            end: Math.max(Number(item.start) || 0, Number(item.end) || ((Number(item.start) || 0) + 2.5)),
+            original: String(item.original || '').trim(),
+            target: String(item.target || '').trim(),
+            locked: true
+          }));
+          subtitles.sort((a, b) => a.start - b.start);
+          saveSubtitlesToStorage();
+          renderSubtitles();
+          showToast(`辨識完成！成功解析 ${subtitles.length} 句【${selectedLanguage}】字幕`);
+        } else {
+          showToast('未能辨識出音訊或畫面台詞');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('辨識失敗，請檢查影片或連線');
+      } finally {
+        btnTranscribe.disabled = false;
+        iconSparkle.classList.remove('hidden');
+        iconSpinner.classList.add('hidden');
+        labelTranscribe.textContent = '辨識';
+      }
+    };
+
+    // ==========================================
+    // 「再譯」外語 CC 字幕邏輯 (SRT/VTT 解析與 Gemini 翻譯)
+    // ==========================================
+    const modalRetranslate = document.getElementById('modal-retranslate');
+    const btnRetranslateOpen = document.getElementById('btn-retranslate-open');
+    const btnCloseRetranslateModal = document.getElementById('btn-close-retranslate-modal');
+    const btnCancelRetranslate = document.getElementById('btn-cancel-retranslate');
+    const btnExecuteRetranslate = document.getElementById('btn-execute-retranslate');
+    const inputSubFile = document.getElementById('input-sub-file');
+    const selectRetranslateLang = document.getElementById('select-retranslate-lang');
+    const retranslateFileInfo = document.getElementById('retranslate-file-info');
+    const labelRetranslateExec = document.getElementById('label-retranslate-exec');
+
+    let uploadedSubtitleText = "";
+
+    btnRetranslateOpen.onclick = () => {
+      modalRetranslate.classList.remove('hidden');
+    };
+
+    btnCloseRetranslateModal.onclick = () => modalRetranslate.classList.add('hidden');
+    btnCancelRetranslate.onclick = () => modalRetranslate.classList.add('hidden');
+
+    inputSubFile.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        retranslateFileInfo.textContent = `已選擇：${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          uploadedSubtitleText = evt.target.result;
+        };
+        reader.readAsText(file);
+      } else {
+        uploadedSubtitleText = "";
+        retranslateFileInfo.textContent = "未選取檔案";
+      }
+    };
+
+    // 解析 SRT / VTT 內容為字幕陣列
+    function parseSubtitleContent(rawText) {
+      const cleanText = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const lines = cleanText.split('\n');
+      const items = [];
+      let currentItem = null;
+
+      const timeRegex = /(\d{1,2}:(?:\d{2}:)?\d{2}[,\.]\d{3})\s*-->\s*(\d{1,2}:(?:\d{2}:)?\d{2}[,\.]\d{3})/;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) {
+          if (currentItem && currentItem.original) {
+            items.push(currentItem);
+            currentItem = null;
+          }
+          continue;
+        }
+
+        const match = line.match(timeRegex);
+        if (match) {
+          if (currentItem && currentItem.original) {
+            items.push(currentItem);
+          }
+          currentItem = {
+            id: Date.now() + items.length,
+            start: parseTimeToSeconds(match[1]),
+            end: parseTimeToSeconds(match[2]),
+            original: '',
+            target: '',
+            locked: true
+          };
+        } else if (currentItem) {
+          // 排除序號純數字行
+          if (/^\d+$/.test(line) && !currentItem.original) continue;
+          currentItem.original = currentItem.original ? `${currentItem.original} ${line}` : line;
+        }
+      }
+
+      if (currentItem && currentItem.original) {
+        items.push(currentItem);
+      }
+      return items;
+    }
+
+    // 透過 Gemini 翻譯字幕文字陣列
+    async function translateSubtitlesWithGemini(subtitleList, sourceLang) {
+      const apiKey = "";
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      const systemPrompt = `你是一位專業的影視字幕繁體中文在地化譯者。
+使用者的字幕來源語言為【${sourceLang}】。
+請將提供的每段外語字幕翻譯成自然、流暢、符合台灣生活習慣與語境的繁體中文。
+請嚴格維持原有的順序與數量，直接以 JSON 陣列回傳物件清單，每個物件包含 original (原文) 與 target (繁體中文譯文)。`;
+
+      const simplifiedInput = subtitleList.map(s => ({ original: s.original }));
+
+      const payload = {
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: `請將下列【${sourceLang}】字幕逐句翻譯為台灣繁體中文：\n${JSON.stringify(simplifiedInput)}` }]
+          }
+        ],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                original: { type: "STRING" },
+                target: { type: "STRING" }
+              },
+              required: ["original", "target"],
+              propertyOrdering: ["original", "target"]
+            }
+          }
+        }
+      };
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`翻譯失敗: ${res.status}`);
+      return await res.json();
+    }
+
+    // 執行「再譯」
+    btnExecuteRetranslate.onclick = async () => {
+      if (!uploadedSubtitleText.trim()) {
+        showToast('請先選擇並載入 CC 字幕檔案');
+        return;
+      }
+
+      const parsedItems = parseSubtitleContent(uploadedSubtitleText);
+      if (parsedItems.length === 0) {
+        showToast('未能自檔案解析出有效的時間軸與文字');
+        return;
+      }
+
+      const sourceLang = selectRetranslateLang.value;
+
+      try {
+        btnExecuteRetranslate.disabled = true;
+        labelRetranslateExec.textContent = '翻譯進行中...';
+        showToast(`正在將 ${parsedItems.length} 句【${sourceLang}】字幕翻譯為繁體中文...`);
+
+        const data = await translateSubtitlesWithGemini(parsedItems, sourceLang);
+        const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!candidateText) throw new Error('翻譯結果為空');
+
+        const translatedArr = JSON.parse(candidateText);
+
+        // 結合原有時間軸與翻譯內容
+        subtitles = parsedItems.map((item, idx) => {
+          const trans = translatedArr[idx]?.target || '';
+          return {
+            ...item,
+            target: trans || item.original
+          };
+        });
+
+        saveSubtitlesToStorage();
+        renderSubtitles();
+        modalRetranslate.classList.add('hidden');
+        showToast(`再譯成功！已匯入 ${subtitles.length} 句繁中對齊字幕`);
+      } catch (err) {
+        console.error(err);
+        showToast('再譯失敗，請稍後重試');
+      } finally {
+        btnExecuteRetranslate.disabled = false;
+        labelRetranslateExec.textContent = '開始翻譯';
+      }
+    };
+
+    // 視窗初始化
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedProject();
+      renderSubtitles();
+    });
+  </script>
+</body>
+</html>
