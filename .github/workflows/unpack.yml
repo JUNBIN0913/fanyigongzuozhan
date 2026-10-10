@@ -1,0 +1,30 @@
+name: Unpack upload
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack tarball into the repo
+        run: |
+          set -euo pipefail
+          TAR=$(ls -1 *.tar.gz | head -n 1)
+          echo "Using $TAR"
+          mkdir /tmp/new
+          tar xzf "$TAR" -C /tmp/new --strip-components=1
+          test -f /tmp/new/public/index.html
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github ! -name "$TAR" -exec rm -rf {} +
+          mkdir docs
+          cp -a /tmp/new/public/. docs/
+          rm -rf /tmp/new/public /tmp/new/.github
+          cp -a /tmp/new/. .
+          rm -f "$TAR"
+          touch docs/.nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Unpack project (website in docs/)"
+          git push
