@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseappcheck.googleapis.com https://content-firebaseappcheck.googleapis.com https://www.google.com; frame-src https://www.google.com https://recaptcha.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>後台登入｜語文辨正</title>
+  <link rel="stylesheet" href="admin.css">
+  <script src="../js/config.js"></script>
+  <script src="js/admin.bundle.js" defer></script>
+  <script src="js/login.js" defer></script>
+</head>
+<body class="login-body">
+  <div class="titlebar"><span class="doc">語文辨正　後台管理</span></div>
+  <main class="login-card">
+    <h1>登入</h1>
+    <form id="login" autocomplete="on">
+      <label for="u">電子郵件</label>
+      <input id="u" name="email" type="email" autocomplete="username" required maxlength="128" autofocus>
+      <label for="p">密碼</label>
+      <input id="p" name="password" type="password" autocomplete="current-password" required maxlength="256">
+      <div id="err" class="form-err" role="alert" aria-live="assertive"></div>
+      <button class="btn primary wide" type="submit">登入</button>
+    </form>
+  </main>
+</body>
+</html>

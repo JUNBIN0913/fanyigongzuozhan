@@ -1,0 +1,51 @@
+/* ===== 編輯器：Ribbon、紙張視圖、狀態列 ===== */
+:root { --kai: "LXGW WenKai TC", "DFKai-SB", "BiauKai", "標楷體", "Kaiti TC", "楷體-繁", "STKaiti", "KaiTi", "AR PL UKai TW", "Noto Serif CJK TC", "Noto Serif TC", serif; }
+
+.ribbon { display: flex; align-items: stretch; background: #f3f3f3; border-bottom: 1px solid var(--line); padding: .35rem .5rem 0; overflow-x: auto; flex: none; }
+.rgroup { display: flex; flex-direction: column; padding: 0 .65rem; border-right: 1px solid #d9d9d9; flex: none; }
+.rgroup:last-child { border-right: 0; }
+.rbtns { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; align-content: center; min-height: 3.2rem; max-width: 22rem; }
+.rlabel { text-align: center; font-size: 12px; color: #666; padding: .1rem 0 .2rem; white-space: nowrap; }
+.rb { font: inherit; min-width: 2.1rem; height: 2rem; padding: 0 .55rem; background: transparent; border: 1px solid transparent; border-radius: 3px; cursor: pointer; color: var(--text); white-space: nowrap; }
+.rb:hover { background: #e3ebf7; border-color: #b8c9e4; }
+.rb[aria-pressed="true"] { background: #cddcf1; border-color: #8aa8d6; }
+.rb.big { height: 2.6rem; padding: 0 .9rem; flex-direction: column; }
+.rb.primary { background: var(--blue); color: #fff; border-color: var(--blue-dark); }
+.rb.primary:hover { background: var(--blue-dark); }
+.rb b, .rb i, .rb u, .rb s { font-family: var(--kai); font-size: 1.05rem; }
+.rsel { font: inherit; height: 2rem; padding: 0 .4rem; border: 1px solid #c4c4c4; border-radius: 3px; background: #fff; max-width: 10rem; }
+.rtxt { font-size: 12px; color: #555; margin-right: .1rem; }
+
+.workspace.editing { padding: 1rem; background: #dcdcdc; }
+.editor-wrap { --paper-w: 794px; --pad-x: 4rem; --zoom: 1; --lh: 1.9; display: flex; flex-direction: column; align-items: center; }
+.docinfo { zoom: var(--zoom); width: min(100%, var(--paper-w)); margin: 0 0 .8rem; padding: .6rem .8rem; background: rgba(255,255,255,.7); border: 1px solid #cfcfcf; border-radius: 3px; display: grid; gap: .5rem; font-family: var(--ui); }
+.docinfo .line { display: flex; gap: .5rem; align-items: baseline; flex-wrap: wrap; }
+.docinfo .lbl { color: var(--muted); font-size: 13px; min-width: 3rem; }
+.docinfo input[type=text] { flex: 1; min-width: 10rem; }
+.tagchip { display: inline-flex; align-items: center; gap: .2rem; background: #e7eefa; color: var(--blue-dark); border: 1px solid #c5d5ee; border-radius: 999px; padding: 0 .3rem 0 .7rem; font-size: 13px; }
+.tagchip button { border: 0; background: none; cursor: pointer; font-size: 15px; line-height: 1; color: inherit; padding: 0 .3rem; border-radius: 50%; }
+.tagchip button:hover { background: #fff; }
+
+/* 白底直式紙張，左右留白 */
+.paper { zoom: var(--zoom); width: min(100%, var(--paper-w)); min-height: 1123px; background: #fff; color: #222; box-shadow: 0 1px 3px rgba(0,0,0,.25), 0 6px 18px rgba(0,0,0,.12);
+  padding: 3rem var(--pad-x) 4rem; margin: 0 auto 2rem; font-family: var(--kai); line-height: var(--lh); }
+.title-input { width: 100%; border: 0; border-bottom: 1px dashed #cfcfcf; background: transparent; font: inherit; font-size: 1.9rem; font-weight: 600; line-height: 1.5; padding: .2rem 0; color: inherit; }
+.title-input:focus { outline: none; border-bottom: 1px solid var(--blue); }
+.doc-body { margin-top: 1.2rem; min-height: 38rem; outline: none; font-size: 1.0625rem; }
+.doc-body:empty::before, .doc-body > p:only-child:has(> br:only-child)::before { content: "在此開始撰寫文章…"; color: #aaa; }
+.doc-body p { margin: 0 0 1.1em; }
+.doc-body h1, .doc-body h2, .doc-body h3 { margin: 1.4em 0 .6em; line-height: 1.5; }
+.doc-body blockquote { margin: 1em 0; padding: .2em 1em; border-left: 3px solid #5b6b5e; background: #e9ede7; }
+.doc-body table { border-collapse: collapse; } .doc-body th, .doc-body td { border: 1px solid #ddd; padding: .3rem .6rem; }
+.doc-body .wrong { color: #a3412f; text-decoration: line-through; text-decoration-thickness: 1px; }
+.doc-body .right { color: #3f6b4a; font-weight: 600; }
+.doc-body .tag-chip { font-size: .85em; padding: 0 .5em; border-radius: 999px; background: #e9ede7; color: #5b6b5e; }
+.doc-body .ta-center, .doc-body .ta-center { text-align: center; } .doc-body .ta-right { text-align: right; }
+.doc-body a { color: #5b6b5e; }
+
+/* 狀態列 */
+.statusbar { display: flex; gap: 1.2rem; align-items: center; background: var(--blue); color: #fff; font-size: 12px; padding: .2rem .9rem; flex: none; }
+.statusbar .grow { flex: 1; }
+.statusbar a { color: #fff; }
+.statusbar .pill { background: rgba(255,255,255,.2); color: #fff; margin: 0; }
+@media (max-width: 40rem) { .editor-wrap { --pad-x: 1.2rem !important; } .paper { padding-top: 1.6rem; } }
