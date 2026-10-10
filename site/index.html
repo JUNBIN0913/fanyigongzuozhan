@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>語文辨正</title>
+  <meta name="description" content="破除常見語文錯誤，普及正確的語文知識。">
+  <!-- 內容安全政策（GitHub Pages 無法設定 HTTP 標頭，故用 meta）。若瀏覽器主控台出現 CSP 錯誤，請把對應網域補進相應項目。
+       註：meta 形式不支援 frame-ancestors，無法防止被他站內嵌。 -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://www.google.com/recaptcha/; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseappcheck.googleapis.com https://www.google.com; frame-src https://www.google.com https://recaptcha.google.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <!-- 楷體網頁字型切片（霞鶩文楷 TC，unicode-range 分片按需載入）。正式上線請釘選版本號，或下載後改為自行託管。 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-tc-webfont/style.css">
+  <link rel="stylesheet" href="css/site.css">
+  <script src="vendor/purify.min.js" defer></script>
+  <script src="js/app.js" defer></script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <a class="skip" href="#app">跳到主要內容</a>
+  <header class="site-header">
+    <div class="wrap bar">
+      <a class="brand" href="#/">語文辨正</a>
+      <nav class="nav" aria-label="主選單">
+        <a href="#/">文章</a>
+        <a href="#/ask">我要提問</a>
+      </nav>
+      <div class="fontctl" role="group" aria-label="字級調整">
+        <button type="button" id="fs-down" aria-label="縮小字級">A<small>−</small></button>
+        <button type="button" id="fs-reset" aria-label="還原字級" title="還原字級">100%</button>
+        <button type="button" id="fs-up" aria-label="放大字級">A<small>＋</small></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="app" class="wrap" tabindex="-1">
+    <noscript>此網站需要啟用 JavaScript 才能瀏覽。</noscript>
+  </main>
+
+  <footer class="wrap site-footer">
+    <p>正確的語文知識，值得被好好說明。</p>
+  </footer>
+</body>
+</html>
