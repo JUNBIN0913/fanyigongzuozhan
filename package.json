@@ -1,0 +1,23 @@
+{
+  "name": "yuwen-firebase",
+  "private": true,
+  "scripts": {
+    "test:rules": "firebase emulators:exec --only firestore \"node tests/rules.test.js\"",
+    "build": "esbuild src/public-adapter.js --bundle --minify --format=iife --target=es2020 --outfile=public/js/public.bundle.js && esbuild src/admin-adapter.js --bundle --minify --format=iife --target=es2020 --outfile=public/admin/js/admin.bundle.js",
+    "vendor": "node -e \"require('fs').copyFileSync('node_modules/dompurify/dist/purify.min.js','public/vendor/purify.min.js')\"",
+    "test:ui": "node tests/ui-public.test.js && node tests/ui-admin.test.js && node tests/ui-editor.test.js",
+    "serve": "python3 -m http.server 8000 --directory public",
+    "test:data": "node tests/admin-adapter.test.js",
+    "test": "npm run test:data && npm run test:ui && node tests/bundle.test.js"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "firebase-tools": "^13.0.0",
+    "esbuild": "^0.24.0",
+    "jsdom": "^25.0.0"
+  },
+  "dependencies": {
+    "firebase": "^10.14.1",
+    "dompurify": "^3.1.6"
+  }
+}

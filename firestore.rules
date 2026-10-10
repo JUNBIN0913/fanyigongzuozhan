@@ -1,0 +1,131 @@
+rules_version = '2';
+
+// 語文辨正（Firebase 版）安全規則
+// 原則：預設全部拒絕；公開端只能「讀已發布內容」與「寫入受嚴格驗證的提問／造訪／瀏覽計數」；
+//       其餘一律需要管理員（Email/密碼登入且在 admins 白名單內）。
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ---------- 共用函式 ---------- */
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // 管理員 = 以「電子郵件/密碼」登入，且 admins/{uid} 文件存在（只能在 Console 手動建立）。
+    // 限定 sign_in_provider，避免有人用匿名帳號偽裝成同 uid。
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.firebase.sign_in_provider == 'password'
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function validArticle(d) {
+      return d.keys().hasOnly(['title', 'slug', 'summary', 'bodyHtml', 'status', 'tagIds',
+                               'sourceQuestionId', 'createdAt', 'updatedAt', 'publishedAt'])
+        && d.keys().hasAll(['title', 'slug', 'summary', 'bodyHtml', 'status', 'tagIds', 'createdAt', 'updatedAt'])
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 120
+        && d.slug is string && d.slug.size() > 0 && d.slug.size() <= 120
+        && d.summary is string && d.summary.size() <= 300
+        && d.bodyHtml is string && d.bodyHtml.size() <= 200000
+        && d.status in ['draft', 'published']
+        && d.tagIds is list && d.tagIds.size() <= 20
+        && (!('sourceQuestionId' in d) || d.sourceQuestionId == null || d.sourceQuestionId is string)
+        && (!('publishedAt' in d) || d.publishedAt == null || d.publishedAt is timestamp);
+    }
+
+    function validNewQuestion(d) {
+      return d.keys().hasOnly(['content', 'askerName', 'contact', 'status', 'createdAt'])
+        && d.keys().hasAll(['content', 'status', 'createdAt'])
+        && d.content is string && d.content.size() >= 5 && d.content.size() <= 1000
+        && (!('askerName' in d) || (d.askerName is string && d.askerName.size() <= 40))
+        && (!('contact' in d) || (d.contact is string && d.contact.size() <= 100))
+        && d.status == 'pending'
+        && d.createdAt == request.time;
+    }
+
+    /* ---------- 管理員白名單：只能讀自己的文件（供前端判斷身分），不可從客戶端寫入 ---------- */
+    match /admins/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    /* ---------- 前台索引（1 份文件包含已發布文章清單與所有標籤）----------
+       meta/index = { updatedAt, tags: {tagId: {name, slug}}, items: {articleId: {title, slug, summary, excerpt, tagIds, publishedAt}} }
+       公開首頁只需讀這 1 份文件，節省免費額度。 */
+    match /meta/{docId} {
+      allow read: if docId == 'index' || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    /* ---------- 文章 ---------- */
+    match /articles/{aid} {
+      // 公開查詢必須帶 where('status','==','published')，否則會被拒絕
+      allow read: if resource.data.status == 'published' || isAdmin();
+      allow create: if isAdmin() && validArticle(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isAdmin() && validArticle(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if isAdmin();
+    }
+
+    /* ---------- 單篇瀏覽次數（僅供參考，前端去重）---------- */
+    match /articleViews/{aid} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count == 1
+        && get(/databases/$(database)/documents/articles/$(aid)).data.status == 'published';
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['count'])
+        && request.resource.data.count == resource.data.count + 1
+        && get(/databases/$(database)/documents/articles/$(aid)).data.status == 'published';
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* ---------- 全站造訪：每位訪客（uid）每天一份，文件 ID 自然去重 ---------- */
+    match /visits/{vid} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['day', 'at'])
+        && request.resource.data.day is string
+        && request.resource.data.day.matches('^[0-9]{8}$')
+        && request.resource.data.at == request.time
+        && vid == request.resource.data.day + '_' + request.auth.uid;
+      allow read: if isAdmin();
+    }
+
+    /* ---------- 訪客提問 ---------- */
+    match /questions/{qid} {
+      // 必須與 rateLimits/{uid} 在同一個批次寫入，且距上次提問超過 10 分鐘
+      allow create: if signedIn()
+        && validNewQuestion(request.resource.data)
+        && getAfter(/databases/$(database)/documents/rateLimits/$(request.auth.uid)).data.lastAt == request.time
+        && (!exists(/databases/$(database)/documents/rateLimits/$(request.auth.uid))
+            || request.time >= get(/databases/$(database)/documents/rateLimits/$(request.auth.uid)).data.lastAt
+                               + duration.value(10, 'm'));
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /rateLimits/{uid} {
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['lastAt'])
+        && request.resource.data.lastAt == request.time;
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['lastAt'])
+        && request.resource.data.lastAt == request.time
+        && request.time >= resource.data.lastAt + duration.value(10, 'm');
+      allow read: if isAdmin();
+    }
+
+    /* ---------- 編輯器自動暫存：只有管理員本人，文件 ID 須以自己的 uid 開頭 ---------- */
+    match /drafts/{did} {
+      allow read, write: if isAdmin() && did.matches(request.auth.uid + '_.+');
+    }
+
+    /* ---------- 其餘一律拒絕 ---------- */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
